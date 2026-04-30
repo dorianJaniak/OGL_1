@@ -151,8 +151,6 @@ void loadLights(std::vector<dj::LightPtr>& lights);
 bool createShadows(const std::vector<dj::LightPtr>& lights,
 	std::vector<dj::LightFramebufferBinding>& spotFBOs,
 	std::vector<dj::LightFramebufferBinding>& pointFBOs);
-bool createShadows(const std::vector<dj::LightPtr> &lights, std::vector<std::pair<dj::LightPtr, dj::ShadowFramebufferPtr>>& shadows,
-	std::vector<std::pair<dj::LightPtr, std::pair<dj::TexturePtr, dj::FramebufferPtr>>> &pointShadows );
 bool createMaterials(std::vector<dj::MaterialPtr>& materials, 
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms, 
 	const std::vector<dj::TexturePtr> &textures);
@@ -272,11 +270,8 @@ int main()
 	std::vector<dj::MaterialPtr> materials;
 	std::map<dj::EngineProgramID, dj::ProgramPtr> enginePrograms;
 	std::vector<dj::LightPtr> lights;
-	//std::vector<dj::FramebufferPtr> shadowFramebuffers;
 	std::vector<dj::LightFramebufferBinding> spotFBOs;
 	std::vector<dj::LightFramebufferBinding> pointFBOs;
-	//std::vector<std::pair<dj::LightPtr, dj::ShadowFramebufferPtr>> shadows;
-	//std::vector<std::pair<dj::LightPtr, std::pair<dj::TexturePtr, dj::FramebufferPtr>>> pointShadows;
 	dj::CameraPtr camera = std::make_shared<dj::Camera>();
 
 	//dj::TGLTFLoader tgltfLoader;
@@ -332,32 +327,6 @@ int main()
 		return -1;
 	}
 	fbo->unbind();
-	//GLuint fbo;
-	//glGenFramebuffers(1, &fbo);
-	//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	//dj::TextureID fboTexture;
-	//glGenTextures(1, &fboTexture);
-	//glBindTexture(GL_TEXTURE_2D, fboTexture);
-	//glTexImage2D(GL_TEXTURE_2D, 0, (gs.isBetterQuality() ? GL_RGB16F : GL_RGB), gs.getWidth(), gs.getHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
-
-	// Create RBO
-	//unsigned int rbo;
-	//glGenRenderbuffers(1, &rbo);
-	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, gs.getWidth(), gs.getHeight());
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-	//if (!checkFramebufferStatus(GL_FRAMEBUFFER))
-	//{
-	//	glfwTerminate();
-	//	return -1;
-	//}
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	GLuint svbo, svao;
 	glGenBuffers(1, &svbo);
@@ -372,7 +341,6 @@ int main()
 	glEnableVertexAttribArray(1);
 
 	// STAGE 6 :::: FBO for shadow maps
-	//if (!createShadows(lights, shadows, pointShadows))
 	if (!createShadows(lights, spotFBOs, pointFBOs))
 	{
 		glfwTerminate();
@@ -530,7 +498,6 @@ int main()
 
 			// Bind Framebuffer
 			shadow.fbo->bind();
-			//shadow.second->bind();
 
 			// Copy lights data to camera
 			// The same as ShadowFramebuffer::configureCamera
@@ -538,7 +505,6 @@ int main()
 			cam.setPosition(shadow.light->getPosition());
 			cam.setRotation(glm::vec3(shadow.light->tmpXPitch, shadow.light->tmpYYaw, 0.0f));
 			cam.setPerspective(shadow.light->getSpotlightAngle() + 30.0f, 1.0f, shadow.light->getShadowNearPlane(), shadow.light->getShadowFarPlane());
-			//shadow.second->configureCamera(*shadow.first, 1.0f, 100.0f, 30.0f);
 
 			// Setup rendering
 			glViewport(0, 0, shadow.fbo->getWidth(), shadow.fbo->getHeight());
@@ -569,24 +535,7 @@ int main()
 			dj::CameraCube cameraCube;
 			cameraCube.setPerspective(1.0f, 25.0f);
 			cameraCube.setPosition(shadow.light->getPosition());
-			 
-			//glm::mat4 projectionMat = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 25.0f);
 
-			//const glm::vec3& lightPos = shadow.first->getPosition();
-			//std::vector<glm::mat4> shadowTransforms;
-			//shadowTransforms.push_back(projectionMat *
-			//	glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-			//shadowTransforms.push_back(projectionMat *
-			//	glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-			//shadowTransforms.push_back(projectionMat *
-			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
-			//shadowTransforms.push_back(projectionMat *
-			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
-			//shadowTransforms.push_back(projectionMat *
-			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-			//shadowTransforms.push_back(projectionMat *
-			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-			
 			glUniform1f(activeProgram->getUniformLocation("u_far"), cameraCube.getFar());
 			glUniform3fv(activeProgram->getUniformLocation("u_lightPos"), 1, glm::value_ptr(cameraCube.getPosition()));
 
@@ -1312,102 +1261,6 @@ bool createShadows(const std::vector<dj::LightPtr>& lights,
 	}
 
 	return ok;
-}
-
-bool createShadows(const std::vector<dj::LightPtr>& lights,
-					std::vector<std::pair<dj::LightPtr, dj::ShadowFramebufferPtr>>& shadows,
-					std::vector<std::pair<dj::LightPtr, std::pair<dj::TexturePtr, dj::FramebufferPtr>>>& pointShadows)
-{
-	constexpr unsigned int c_shadowRes = 1024u;
-
-	for (dj::LightPtr light : lights)
-	{
-		if (light->getType() == dj::Light::Type::Spot)
-		{
-			//static const float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-			//dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_2D);
-			//tex->bind();
-			//tex->setSize(c_shadowRes, c_shadowRes);
-			//tex->setFiltering(GL_NEAREST, GL_NEAREST);
-			//tex->setWrapping(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
-			//glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-			//dj::FramebufferPtr spotDepthFBO = std::make_shared<dj::Framebuffer>();
-			//spotDepthFBO->bind();
-			//spotDepthFBO->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
-			//spotDepthFBO->nullifyData();
-			//verifyFramebufferStatus(spotDepthFBO->getFramebufferStatus());
-			//spotDepthFBO->unbind();
-
-			std::cout << "Creating ShadowFramebuffer\n";
-
-			shadows.push_back({ light, std::make_shared<dj::ShadowFramebuffer>(c_shadowRes) });
-			auto &shadow = shadows.back();
-			
-			if (!verifyFramebufferStatus(shadow.second->getFramebufferStatus()))
-			{
-				return false;
-			}
-
-			//auto texFBOpair = std::make_pair(tex, spotDepthFBO);
-			//auto pair = std::make_pair(light, texFBOpair);
-			//pointShadows.push_back(pair);
-		}
-
-		if (light->getType() == dj::Light::Type::Point)
-		{
-			std::cout << "Creating Point Shadows Texture\n";
-			const static GLenum sides[6] = {
-				GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-				GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-				GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-				GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-				GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-			};
-			dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_CUBE_MAP);
-			tex->bind();
-			tex->setSize(c_shadowRes, c_shadowRes);
-			tex->setFiltering(GL_LINEAR, GL_LINEAR);
-			tex->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-			
-			//dj::TextureID tex;
-			//glGenTextures(1, &tex);
-			//glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
-			for (unsigned int i = 0; i < 6; ++i)
-			{
-				tex->transferDataCubeSide(sides[i], GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr, false);
-				//glTexImage2D(sides[i], 0, GL_DEPTH_COMPONENT, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-				
-				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-			}
-			
-			dj::FramebufferPtr cubeDepthFBO = std::make_shared<dj::Framebuffer>();
-			cubeDepthFBO->bind();
-			cubeDepthFBO->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
-			cubeDepthFBO->nullifyData();
-			verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
-			cubeDepthFBO->unbind();
-
-			//dj::FramebufferID cubeDepthFBO;
-			//glGenFramebuffers(1, &cubeDepthFBO);
-			//glBindFramebuffer(GL_FRAMEBUFFER, cubeDepthFBO);
-			//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, tex, 0);
-			//glDrawBuffer(GL_NONE);
-			//glReadBuffer(GL_NONE);
-			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-			auto texFBOpair = std::make_pair(tex, cubeDepthFBO);
-			auto pair = std::make_pair(light, texFBOpair);
-			pointShadows.push_back(pair);
-		}
-	}
-
-	return true;
 }
 
 bool createMaterials(std::vector<dj::MaterialPtr>& materials,

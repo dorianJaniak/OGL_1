@@ -184,6 +184,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Changelog.txt" />
+    <Text Include="doc\Changelog.txt">
+      <Filter>Pliki zasobów</Filter>
+    </Text>
   </ItemGroup>
 </Project>
