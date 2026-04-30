@@ -1,0 +1,1677 @@
+﻿#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <iostream>
+#include <chrono>
+#include <vector>
+#include <map>
+
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+
+#include <memory>
+
+#include "RenderNodes/RenderShadedWorldNode.h"
+#include "RenderNodes/RenderDepthWorldNode.h"
+#include "RenderNodes/RenderSkyboxWorldNode.h"
+#include "RenderNodes/IRenderNode.h"
+#include "TextureData.h"
+#include "TextureContainer.h"
+#include "MeshData.h"
+#include "Mesh.h"
+#include "Object.h"
+#include "Material.h"
+#include "Shader.h"
+#include "Program.h"
+#include "Camera.h"
+#include "CameraCube.h"
+#include "Light.h"
+#include "ShadowFramebuffer.h"
+#include "Framebuffer.h"
+#include "TimeDrivenMovement.h"
+#include "TGLTFLoader.h"
+#include "DefinitionsGL.h"
+#include "EngineKeywords.h"
+#include "Predefinitions\PredefinedShaders.h"
+#include "Predefinitions\PredefinedMeshes.h"
+
+#include <array>
+
+// IN FUTURE: Approach AZDO
+// TODAY: Single VBO and single VAO
+
+class GlobalSettings
+{
+	unsigned int windowWidth;
+	unsigned int windowHeight;
+	unsigned int activeCameraIndex;
+	float aspectRatio;
+	bool gammaCorrection;
+	bool betterQuality;
+	unsigned int debugVertices;
+
+	GlobalSettings()
+		: activeCameraIndex(0)
+		, gammaCorrection(false)
+		, betterQuality(true)
+		, debugVertices(0u)
+	{ 
+		setWindowSize(1200, 800);
+	}
+
+public:
+	GlobalSettings(const GlobalSettings&) = delete;
+	GlobalSettings(GlobalSettings&&) = delete;
+	void operator=(const GlobalSettings&) = delete;
+
+	static GlobalSettings& getInstance()
+	{
+		static GlobalSettings gs;
+		return gs;
+	}
+
+	unsigned int getWidth() const
+	{
+		return windowWidth;
+	}
+
+	unsigned int getHeight() const
+	{
+		return windowHeight;
+	}
+
+	float getAspectRatio() const
+	{
+		return aspectRatio;
+	}
+
+	unsigned int getActiveCameraIndex() const
+	{
+		return activeCameraIndex;
+	}
+
+	bool isGammaCorrected() const
+	{
+		return gammaCorrection;
+	}
+
+	bool isBetterQuality() const
+	{
+		return betterQuality;
+	}
+
+	unsigned int getDebugVertices() const
+	{
+		return debugVertices;
+	}
+
+	void setWindowSize(unsigned int width, unsigned int height)
+	{
+		windowWidth = width;
+		windowHeight = height;
+		aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	}
+
+	void changeCamera()
+	{
+		activeCameraIndex = (activeCameraIndex + 1u) % 4u;
+	}
+
+	void switchGammaCorrection()
+	{
+		gammaCorrection = !gammaCorrection;
+	}
+
+	void switchDebugVertices()
+	{
+		debugVertices = (debugVertices + 1u) % 4u;
+	}
+};
+
+// Helpers - Loaders
+GLFWwindow* init();
+bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
+bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
+GLenum channelsToColorFormat(const TextureData& tex);
+//GLuint loadCubemap(const char* pathPrefix, const char* fileType);
+bool loadCubemap(dj::TextureContainer& textures, const char* pathPrefix, const char* fileType);
+//bool loadTexture2D(dj::TextureContainer& textures, dj::TextureContainer::Purpose purpose, const char* path, bool srgb);
+bool loadTexture2D(dj::TextureContainer& textures, const char* path, bool srgb);
+//int loadTextures(std::vector<dj::TextureID>& textures);
+bool loadTexturesPBR(dj::TextureContainer& tc, const std::string& path, const std::string& extension);
+int loadTextures(dj::TextureContainer& textures);
+void configureRasterization();
+void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects);
+void setDefaultMaterials(std::vector<dj::ObjectPtr>& objects, dj::MaterialPtr mat);
+void setMaterials(std::vector<dj::ObjectInstancePtr>& objectInstances, const std::vector<dj::MaterialPtr>& mat);
+void createObjectInstances(const std::vector<dj::ObjectPtr>& objects, std::vector<dj::ObjectInstancePtr>& objectInstances);
+void loadLights(std::vector<dj::LightPtr>& lights);
+
+// Helpers - Relations
+bool createShadows(const std::vector<dj::LightPtr>& lights,
+	std::vector<dj::LightFramebufferBinding>& spotFBOs,
+	std::vector<dj::LightFramebufferBinding>& pointFBOs);
+bool createShadows(const std::vector<dj::LightPtr> &lights, std::vector<std::pair<dj::LightPtr, dj::ShadowFramebufferPtr>>& shadows,
+	std::vector<std::pair<dj::LightPtr, std::pair<dj::TexturePtr, dj::FramebufferPtr>>> &pointShadows );
+bool createMaterials(std::vector<dj::MaterialPtr>& materials, 
+	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms, 
+	const std::vector<dj::TexturePtr> &textures);
+
+// Helpers - Transformations
+void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances);
+void manualObjectsTransformations(std::vector<dj::ObjectInstancePtr>& instances, const dj::TimeDrivenMovement& tdm);
+void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMovement& tdm);
+glm::mat3 calcNormalMatrixToModelSpace(const glm::mat4& model);
+glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
+
+// Helpers - Bindings
+//void bindTextures(const std::vector<dj::TextureID>& textures);
+void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& lights);
+
+// Helpers - Debug
+bool checkFramebufferStatus(GLenum status);
+bool verifyFramebufferStatus(GLenum status);
+void reportFPS();
+
+// Helpers - Callbacks
+void fbResizeCallback(GLFWwindow* window, int width, int height);
+void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void userCursorCallback(GLFWwindow* window, double xpos, double ypos);
+void userScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+// Helpers - Render
+void renderWorldForDepthTest(std::vector<dj::ObjectInstancePtr>& instances, dj::ProgramPtr program);
+void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr>& instances, dj::ProgramPtr program, dj::Camera& camera);
+
+/*! \page futureToDo Future Improvements List
+*
+*   -# TODO: Debug - Artificial Objects for Debugging - Axes
+*   -# TODO: Debug - class for debugging various things
+*   -# TODO: Organization - Default values and assignments (like for example GL_TEXTURE31 for Skybox)
+*   -# TODO: Organization - Template for dirty based updates
+*   -# TODO: Organization - Game visual settings file
+*   -# TODO: Organization - Default material when Material is not assigned
+*   -# TODO: Objects - Container for Object Instances that is sorted by Program
+*   -#	It will be useful for drawing objects to minimize Program bindings
+*   -# TODO: Objects - Object Instances class to allow drawing the same object multiple times
+*   -#	or maybe? Object is in fact the Object Instance?
+*   -# TODO: Objects Queue
+*   -# TODO: Objects Queue - Objects Layers
+*   -# TODO: Objects Queue - Sorting
+*   -# TODO: Objects Queue - Rooms
+*   -# TODO: Control - Mouse to look
+*   -# TODO: Loading - meshes
+*   -# TODO: Loading - map (gltf most probably)
+*   -# TODO: Loading - materials
+*   -# TODO: Searching for lights affecting meshes (uniform only lights in range)
+*   -# TODO: Framebuffer effects - Bloom
+*   -# TODO: Framebuffer effects - Depth of Field
+*   -# TODO: Framebuffer effects - Motion Blur
+*   -# TODO: Framebuffer effects - SSAO
+*   -# TODO: Framebuffer effects - Distortion (fire)
+*   -# TODO: Anti-aliasing
+*   -# TODO: Textures - Anisotropic
+*   -# TODO: Textures - Resizeable Main Window
+*   -# TODO: Alpha Blending
+*   -# TODO: Shaders - Shinning
+*   -# TODO: Shaders - Transparent Objects
+*   -# TODO: Shaders - Accepting light quality parameter
+*   -# TODO: Shaders - Nodes
+*   -# TODO: Shaders - Geometry Shader
+*   -# TODO: Shaders - Tesselation
+*   -# TODO: Shaders - Transform shader to PBR Shader
+*   -# TODO: Shaders - UBO for Lights?
+*   -# TODO: Cubemap - Reflection Probes
+*   -# TODO: Shadows - static lights
+*   -#  Shadows would be generated only once
+*   -# TODO: Shadows - shadows generated only if something has changed nearby
+*   -# TODO: Shadows Queue - shadows that needs to be rerendered after change in the world
+*   -# TODO: Optimization - Depth Test before Rendering
+*   -# TODO: Optimization - Shadows with some Pattern
+*   -# TODO: Optimization - Depth of Field with some Pattern
+*   -# TODO: Optimization - Skipped Depth Tests for some shadows for some frames
+*   -# TODO: Optimization - First check shadow map before calculating light
+*   -# TODO: Additionals - Basic Objects (cube, pyramid, sphere, plane, torus, circle)
+*   -# TODO: Additionals - Basic Maps to load it to see an example
+*   -# TODO: Additionals - Output log
+*/
+
+/*! \page renderingLoopOrder Rendering Loop Stages
+*   STAGE 1 :::: Window and Context Init \n
+*   STAGE 2 :::: Shader Programs Creation \n
+*   STAGE 3 :::: Objects Loading \n
+*   STAGE 4 :::: FBO Creation \n
+*   STAGE 5 :::: FBO for shadow maps \n
+*   STAGE 6 :::: Vertex related Buffers Creation \n
+*   STAGE 7 :::: Materials Creation and Configuration \n
+*   STAGE 8 :::: Pre-loop Settings \n
+*   STAGE 8.1 :::: Simple movement definitions \n
+*   STAGE 9 :::: Render Loop \n
+*   STAGE 9.1 :::: Internal logging \n
+*   STAGE 9.2 :::: Update \n
+*   STAGE 9.3 :::: Rendering \n
+*   STAGE 9.3.1 :::: Render Shadow Maps (Depth Tests) \n
+*   STAGE 9.3.1.1 :::: Render Spot Shadow Maps (Depth Tests) \n
+*   STAGE 9.3.1.2 :::: Render Cubemap Shadows \n
+*   STAGE 9.3.2 :::: Render Debug Cubemap \n
+*   STAGE 9.3.3 :::: Render Scene \n
+*   STAGE 9.3.3.1 :::: Render World Node \n
+*   STAGE 9.3.3.2 :::: Render Skybox Node \n
+*   STAGE 9.3.3.3 :::: Render Debug Edges \n
+*   STAGE 9.3.4 :::: Draw Main FBO \n
+*/
+
+int main()
+{
+	const GlobalSettings &gs = GlobalSettings::getInstance();
+	dj::TimeDrivenMovement tdm;
+
+	dj::TextureContainer tc;							// Using only Purpose::File (textures and skybox)
+	std::vector<dj::ObjectPtr> objects;
+	std::vector<dj::ObjectInstancePtr> objectInstances;
+	std::vector<dj::MaterialPtr> materials;
+	std::map<dj::EngineProgramID, dj::ProgramPtr> enginePrograms;
+	std::vector<dj::LightPtr> lights;
+	//std::vector<dj::FramebufferPtr> shadowFramebuffers;
+	std::vector<dj::LightFramebufferBinding> spotFBOs;
+	std::vector<dj::LightFramebufferBinding> pointFBOs;
+	//std::vector<std::pair<dj::LightPtr, dj::ShadowFramebufferPtr>> shadows;
+	//std::vector<std::pair<dj::LightPtr, std::pair<dj::TexturePtr, dj::FramebufferPtr>>> pointShadows;
+	dj::CameraPtr camera = std::make_shared<dj::Camera>();
+
+	//dj::TGLTFLoader tgltfLoader;
+	//return tgltfLoader.load("res/gltfs/twoCubes_altC_rot_texture_customProp/untitled.gltf");
+
+	// STAGE 1 :::: Window and Context Init
+	GLFWwindow* window = init();
+	if (!window)
+	{
+		return -1;
+	}
+
+	// STAGE 2 :::: Shader Programs Creation
+	// Loads, compiles and links shaders and generates Program ID
+	if (!loadEnginePrograms(enginePrograms))
+	{
+		glfwTerminate();
+		return -1;
+	}
+
+	// Setups Texture Units
+	if (!setupEnginePrograms(enginePrograms))
+	{
+		glfwTerminate();
+		return -1;
+	}
+
+	// STAGE 3 :::: Objects Loading
+	// Load objects and init their transformations
+	dj::MeshData meshData;
+	loadObjects(meshData, objects);
+	createObjectInstances(objects, objectInstances);
+	loadLights(lights);
+
+	// STAGE 4 :::: Cameras Configuration
+	camera->setPerspective(30.0f, gs.getAspectRatio(), 0.1f, 300.0f);
+
+	// STAGE 5 :::: FBO Creation
+	dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
+	fbo->bind();
+	dj::TexturePtr fboTexture = std::make_shared<dj::Texture>(GL_TEXTURE_2D);
+	fboTexture->bind();
+	fboTexture->setFiltering(GL_NEAREST, GL_NEAREST);
+	fboTexture->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+	fboTexture->setSize(gs.getWidth(), gs.getHeight());
+	fboTexture->transferData2D(gs.isBetterQuality() ? GL_RGB16F : GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, nullptr, false);
+	
+	fbo->assignTextureAttachment(fboTexture, GL_COLOR_ATTACHMENT0);
+	fbo->genRenderbufferAttachment(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
+	if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
+	{
+		glfwTerminate();
+		return -1;
+	}
+	fbo->unbind();
+	//GLuint fbo;
+	//glGenFramebuffers(1, &fbo);
+	//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	//dj::TextureID fboTexture;
+	//glGenTextures(1, &fboTexture);
+	//glBindTexture(GL_TEXTURE_2D, fboTexture);
+	//glTexImage2D(GL_TEXTURE_2D, 0, (gs.isBetterQuality() ? GL_RGB16F : GL_RGB), gs.getWidth(), gs.getHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+
+	// Create RBO
+	//unsigned int rbo;
+	//glGenRenderbuffers(1, &rbo);
+	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, gs.getWidth(), gs.getHeight());
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	//if (!checkFramebufferStatus(GL_FRAMEBUFFER))
+	//{
+	//	glfwTerminate();
+	//	return -1;
+	//}
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	GLuint svbo, svao;
+	glGenBuffers(1, &svbo);
+	glBindBuffer(GL_ARRAY_BUFFER, svbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(dj::fullscreenVerts), dj::fullscreenVerts, GL_STATIC_DRAW);
+	
+	glGenVertexArrays(1, &svao);
+	glBindVertexArray(svao);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)nullptr);				// position
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));	// UV
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+
+	// STAGE 6 :::: FBO for shadow maps
+	//if (!createShadows(lights, shadows, pointShadows))
+	if (!createShadows(lights, spotFBOs, pointFBOs))
+	{
+		glfwTerminate();
+		return -1;
+	}
+
+	// STAGE 7 :::: Vertex related Buffers Creation
+	// VBO - just buffer / data of vertices. GPU would not know what to do with it
+	// VAO - informs GPU how to interpret VBO data. It is like data structure definition
+	// EBO - stores faces (indices)
+	GLuint vbo, vao, ebo;
+	
+	// It is unnecessary to bind VAO, because glBindBuffer and glBufferData does not
+	// modify VAO at all. VAO is informed only by glVertexAttribPointer
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, meshData.getVerticesDataSize(), &meshData.getAllVertices()[0], GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);	// It is important to bind it before glVertexAttribPointer
+	// glVertexAttribPointer defines structure of the single "line" (single vertex data)
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, dj::MeshData::vertexComponentsCount * sizeof(float), (void*)NULL);					// position
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, dj::MeshData::vertexComponentsCount * sizeof(float), (void*)(3 * sizeof(float)));	// normal
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, dj::MeshData::vertexComponentsCount * sizeof(float), (void*)(6 * sizeof(float)));	// tangent
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, dj::MeshData::vertexComponentsCount * sizeof(float), (void*)(9 * sizeof(float)));	// bitangent
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, dj::MeshData::vertexComponentsCount * sizeof(float), (void*)(12 * sizeof(float)));	// UV
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
+
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData.getIndicesDataSize(), &meshData.getAllIndices()[0], GL_STATIC_DRAW);
+
+	// STAGE 7 :::: Materials Creation
+	if (!loadTextures(tc))
+	{
+		return -1;
+	}
+
+	// Materials configuration
+	if (!createMaterials(materials, enginePrograms, tc.getTextures(dj::TextureTag::File)))
+	{
+		return -1;
+	}
+	setDefaultMaterials(objects, materials[0]);
+	setMaterials(objectInstances, materials);
+
+	// STAGE 8 :::: Pre-loop Settings
+	// Configure Rasterization - culling, depth test, etc.
+	configureRasterization();
+
+	assert(spotFBOs.size() >= 2);
+	GLuint cameraIDs[3] = { fboTexture->getID(), 0u, 0u };
+	{
+		for (unsigned int i = 0u; i < 2u; ++i)
+		{
+			dj::ConstTexturePtr tex = spotFBOs[i].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
+
+			cameraIDs[i + 1u] = (tex != nullptr ? tex->getID() : 0u);
+		}
+	}
+
+	// Define some color
+	glm::vec3 color(0.4f, 0.6f, 1.0f);
+
+	// Test Pos1
+	//camera.setPosition({ 0.0f, 1.0f, 0.0f });
+
+	// Test Pos2
+	camera->setPosition({ 20.0f, 4.5f, 8.0f });
+	camera->setRotation({-15.0f, 60.0f, 0.0f });
+
+	maualObjectsPreTransformations(objectInstances);
+
+	// STAGE 8.1 :::: Simple movement definitions
+	dj::TimeFlow<std::chrono::seconds> tfLightIntensity(std::chrono::seconds(15));
+	dj::WahwahSinUpdate light0Move(tdm, lights[0]->getPosition().x, 10.0f, 30.0f);
+	dj::LinearUpdate light0Range(tdm, 1.0f, 3.0f);
+	dj::WahwahSinUpdate light2RotX(tdm, -40.0f, 30.0f, 90.0f);
+	dj::LinearUpdate light3RotY(tdm, 180.0f, 120.0f);
+
+	// STAGE XX :::: Render Nodes creation
+	std::vector<dj::ObjectInstancePtr> skyboxObjectInstances;
+	{
+		dj::ObjectInstancePtr skyboxCubeObjInst = std::make_shared<dj::ObjectInstance>(objects.at(3u), true);
+		skyboxCubeObjInst->setMaterial(materials.at(2u));
+		skyboxObjectInstances.push_back(skyboxCubeObjInst);
+	}
+	// VARIANT 1
+	//dj::RenderSkyboxWorldNode skyboxNode{ fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
+	//skyboxNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
+	//dj::RenderShadedWorldNode worldNode{ fbo, camera, ebo, objectInstances, shadows, pointShadows, lights, std::string("Main Color - World") };
+	//worldNode.setConfiguration(GL_NONE, true, true, GL_NONE);
+
+	// VARIANT 2
+	dj::RenderShadedWorldNode worldNode{ fbo, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World") };
+	worldNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, true, true, GL_NONE);
+	dj::RenderSkyboxWorldNode skyboxNode{ fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
+	skyboxNode.setConfiguration(GL_NONE, true, false, GL_NONE);
+
+	std::vector<dj::ObjectInstancePtr> cubeMapDebugObjectInstances;
+	{
+		dj::ObjectInstancePtr cubeObjInst = std::make_shared<dj::ObjectInstance>(objects.at(3u), true);
+		cubeObjInst->setMaterial(materials.at(3u));
+		cubeMapDebugObjectInstances.push_back(cubeObjInst);
+	}
+	dj::RenderSkyboxWorldNode cubeMapDebugNode{ fbo, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
+	cubeMapDebugNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
+
+
+	// STAGE 9 :::: Render Loop
+	while (!glfwWindowShouldClose(window))
+	{
+		// STAGE 9.1 :::: Internal logging
+		reportFPS();
+		tdm.nextFrame();
+
+		// STAGE 9.2 :::: Update
+		assert(lights.size() >= 4);
+		if (tfLightIntensity.expirationCount())
+		{
+			tfLightIntensity.start();
+			light0Range.resetValue(1.0f);
+			lights[0]->setIntensity(lights[0]->getIntensity() + 5.0f);
+			std::cout << "Light intensity: " << lights[0]->getIntensity() << std::endl;
+		}
+
+		lights[0]->setPosition(light0Move.getVal(), lights[0]->getPosition().y, lights[0]->getPosition().z);
+		lights[0]->setRange(light0Range.getVal());
+		
+		lights[2]->setDirection(light2RotX.getVal(), -60.0f);
+		lights[3]->setDirection(-10.0f, light3RotY.getVal());
+
+		updateCamera(window, *camera, tdm);
+		manualObjectsTransformations(objectInstances, tdm);
+
+		// Stage 9.3 :::: Rendering
+		glBindVertexArray(vao);
+
+		// Stage 9.3.1 :::: Render Shadow Maps (Depth Tests)
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);
+		enginePrograms[dj::EngineProgramID::depth]->use();
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
+		// Stage 9.3.1.1 :::: Render Spot Shadow Maps (Depth Tests)
+		//for (auto& shadow : shadows)
+		for (auto& shadow : spotFBOs)
+		{
+			// Pointer to active program
+			dj::ProgramPtr activeProgram = enginePrograms.at(dj::EngineProgramID::depth);
+
+			// Bind Framebuffer
+			shadow.fbo->bind();
+			//shadow.second->bind();
+
+			// Copy lights data to camera
+			// The same as ShadowFramebuffer::configureCamera
+			dj::Camera cam;
+			cam.setPosition(shadow.light->getPosition());
+			cam.setRotation(glm::vec3(shadow.light->tmpXPitch, shadow.light->tmpYYaw, 0.0f));
+			cam.setPerspective(shadow.light->getSpotlightAngle() + 30.0f, 1.0f, shadow.light->getShadowNearPlane(), shadow.light->getShadowFarPlane());
+			//shadow.second->configureCamera(*shadow.first, 1.0f, 100.0f, 30.0f);
+
+			// Setup rendering
+			glViewport(0, 0, shadow.fbo->getWidth(), shadow.fbo->getHeight());
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+			// Setup light projection
+			glm::mat4 lightVP = cam.getVPMatrix();
+			glUniformMatrix4fv(activeProgram->getUniformLocation("u_camVP"), 1, GL_FALSE, glm::value_ptr(lightVP));
+			glUniform1f(activeProgram->getUniformLocation("u_near"), shadow.light->getShadowNearPlane());
+			glUniform1f(activeProgram->getUniformLocation("u_far"), shadow.light->getShadowFarPlane());
+
+			// Render vertices for Shadows
+			renderWorldForDepthTest(objectInstances, activeProgram);
+		}
+
+		// Stage 9.3.1.2 :::: Render Cubemap Shadows
+		// use shader
+		glEnable(GL_DEPTH_TEST);
+		enginePrograms.at(dj::EngineProgramID::depthCube)->use();
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
+		for (auto& shadow : pointFBOs)
+		{
+			// Pointer to active program
+			dj::ProgramPtr activeProgram = enginePrograms.at(dj::EngineProgramID::depthCube);
+
+			shadow.fbo->bind();
+			dj::CameraCube cameraCube;
+			cameraCube.setPerspective(1.0f, 25.0f);
+			cameraCube.setPosition(shadow.light->getPosition());
+			 
+			//glm::mat4 projectionMat = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 25.0f);
+
+			//const glm::vec3& lightPos = shadow.first->getPosition();
+			//std::vector<glm::mat4> shadowTransforms;
+			//shadowTransforms.push_back(projectionMat *
+			//	glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			//shadowTransforms.push_back(projectionMat *
+			//	glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			//shadowTransforms.push_back(projectionMat *
+			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+			//shadowTransforms.push_back(projectionMat *
+			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+			//shadowTransforms.push_back(projectionMat *
+			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			//shadowTransforms.push_back(projectionMat *
+			//	glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			
+			glUniform1f(activeProgram->getUniformLocation("u_far"), cameraCube.getFar());
+			glUniform3fv(activeProgram->getUniformLocation("u_lightPos"), 1, glm::value_ptr(cameraCube.getPosition()));
+
+			for (unsigned int i = 0u; i < 6u; ++i)
+			{
+				std::string uniformName = std::string("u_cameraMatrices[") + std::to_string(i) + std::string("]");
+				glUniformMatrix4fv(activeProgram->getUniformLocation(uniformName.c_str()), 1, GL_FALSE, glm::value_ptr(cameraCube.getVPMatrix(i)));
+			}
+
+			glViewport(0, 0, shadow.fbo->getWidth(), shadow.fbo->getHeight());
+			glClear(GL_DEPTH_BUFFER_BIT);
+			
+			// Render vertices for Shadows (duplicated)
+			renderWorldForDepthTest(objectInstances, activeProgram);
+		}
+
+		// Stage 9.3.2 :::: Render Debug Cubemap
+		if (gs.getActiveCameraIndex() == 3u)
+		{
+			dj::ConstTexturePtr shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
+			if (shTex != nullptr)
+			{
+				cubeMapDebugNode.addTexture("u_skybox", shTex->getTextureTypeInfo());
+
+			}
+			cubeMapDebugNode.run();
+
+			glDepthMask(GL_TRUE);
+			glDisable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
+		}
+
+		// Stage 9.3.3 :::: Render Scene
+		else
+		{
+			// Stage 9.3.3.1 :::: Render World Node
+			dj::IRenderNode* worldNodeG = &worldNode;
+			worldNodeG->run();
+
+			// Stage 9.3.3.2 :::: Render Skybox Node
+			glDepthFunc(GL_LEQUAL);
+			skyboxNode.run();
+
+			// Stage 9.3.3.3 :::: Render Debug Edges
+			glDepthFunc(GL_LESS);
+			if (gs.getDebugVertices())
+			{
+				assert(enginePrograms.size() >= 5);
+				dj::ProgramPtr programDebugMesh = enginePrograms.at(dj::EngineProgramID::debugMesh);
+				programDebugMesh->use();
+				glUniform1f(programDebugMesh->getUniformLocation("u_axisLength"), 0.3f);
+				glUniform1ui(programDebugMesh->getUniformLocation("u_debugSelection"), gs.getDebugVertices());
+				renderWorldSingleProgram(objectInstances, programDebugMesh, *camera);
+			}
+		}
+
+		// Stage 9.3.4 :::: Draw Main FBO
+		if (gs.isGammaCorrected())
+		{
+			glEnable(GL_FRAMEBUFFER_SRGB);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glViewport(0, 0, gs.getWidth(), gs.getHeight());
+		enginePrograms[dj::EngineProgramID::postProcessing]->use();
+		glBindVertexArray(svbo);
+		glDisable(GL_DEPTH_TEST);
+		glActiveTexture(GL_TEXTURE11);
+		if (gs.getActiveCameraIndex() == 3u)
+		{
+			glBindTexture(GL_TEXTURE_2D, cameraIDs[0u]);
+		}
+		else
+		{
+			glBindTexture(GL_TEXTURE_2D, cameraIDs[gs.getActiveCameraIndex()]);
+		}
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+		glDisable(GL_FRAMEBUFFER_SRGB);
+
+		// Display
+		glfwSwapBuffers(window);
+
+		// Poll Events
+		glfwPollEvents();
+	}
+
+	/* Clear */
+	glfwDestroyWindow(window);
+	glfwTerminate();
+	return 0;
+}
+
+glm::mat3 calcNormalMatrixToModelSpace(const glm::mat4& model)
+{
+	return glm::mat3(glm::transpose(glm::inverse(model)));
+}
+
+glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model)
+{
+	//mat3(transpose(inverse(u_model)))
+	return glm::mat3(glm::transpose(glm::inverse(view * model)));
+}
+
+void renderWorldForDepthTest(std::vector<dj::ObjectInstancePtr>& instances, dj::ProgramPtr activeProgram)
+{
+	for (dj::ObjectInstancePtr& obj : instances)
+	{
+		if (obj->isVisible())
+		{
+			glUniformMatrix4fv(activeProgram->getUniformLocation("u_model"), 1, GL_FALSE, glm::value_ptr(obj->getTransformation()));
+			unsigned int indicesIndexStart = obj->getMeshAlignment().indicesStart;
+			glDrawRangeElements(
+				GL_TRIANGLES,
+				obj->getMeshAlignment().verticesStart,
+				obj->getMeshAlignment().verticesEnd,
+				obj->getMeshAlignment().indicesCount, GL_UNSIGNED_INT,
+				(void*)(indicesIndexStart * sizeof(unsigned int)));
+		}
+	}
+}
+
+void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr> &instances, dj::ProgramPtr program, dj::Camera &camera)
+{
+	glUniformMatrix4fv(program->getUniformLocation("u_proj"), 1, GL_FALSE, glm::value_ptr(camera.getPerspectiveMatrix()));
+	glUniformMatrix4fv(program->getUniformLocation("u_view"), 1, GL_FALSE, glm::value_ptr(camera.getViewMatrix()));
+	
+	for (dj::ObjectInstancePtr& obj : instances)
+	{
+		if (obj->isVisible())
+		{
+			glm::mat3 normalMat = calcNormalMatrixToViewSpace(camera.getViewMatrix(), obj->getTransformation());
+			glUniformMatrix4fv(program->getUniformLocation("u_model"), 1, GL_FALSE, glm::value_ptr(obj->getTransformation()));
+			glUniformMatrix3fv(program->getUniformLocation("u_normalMat"), 1, GL_FALSE, glm::value_ptr(normalMat));
+			unsigned int indicesIndexStart = obj->getMeshAlignment().indicesStart;
+			glDrawRangeElements(
+				GL_TRIANGLES,
+				obj->getMeshAlignment().verticesStart,
+				obj->getMeshAlignment().verticesEnd,
+				obj->getMeshAlignment().indicesCount, GL_UNSIGNED_INT,
+				(void*)(indicesIndexStart * sizeof(unsigned int)));
+		}
+	}
+}
+
+GLFWwindow* init()
+{
+	glfwInit();
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	GlobalSettings& gs = GlobalSettings::getInstance();
+	GLFWwindow* window = glfwCreateWindow(gs.getWidth(), gs.getHeight(), "Prosty Silnik", NULL, NULL);
+
+	if (!window)
+	{
+		std::cerr << "Could not create GLFW Window\n";
+		glfwTerminate();
+		return nullptr;
+	}
+
+	glfwMakeContextCurrent(window);
+
+	// Window and Input Callbacks
+	glfwSetFramebufferSizeCallback(window, fbResizeCallback);
+	glfwSetKeyCallback(window, userInputCallback);
+	glfwSetCursorPosCallback(window, userCursorCallback);
+	glfwSetScrollCallback(window, userScrollCallback);
+
+	if (glewInit() != GLEW_OK)
+	{
+		std::cerr << "Could not init GLEW\n";
+		glfwTerminate();
+		return nullptr;
+	}
+
+	return window;
+}
+
+bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& programs)
+{
+	dj::Log log;
+
+	dj::ProgramPtr program = std::make_shared<dj::Program>();
+	dj::ProgramPtr programFBO = std::make_shared<dj::Program>();
+	dj::ProgramPtr programDepthTest = std::make_shared<dj::Program>();
+	dj::ProgramPtr programSkybox = std::make_shared<dj::Program>();
+	dj::ProgramPtr programDebugMesh = std::make_shared<dj::Program>();
+	dj::ProgramPtr programDepthTestCube = std::make_shared<dj::Program>();
+
+	if (!program->prepare(dj::prePBR_vsSource, dj::pbr_fsSource, log, std::string("PBR Shader")))
+	{
+		return false;
+	}
+
+	if (!programFBO->prepare(dj::fullscreenFBO_vsSource, dj::fullscreenFBO_fsSource, log, std::string("FBO Shader")))
+	{
+		return false;
+	}
+
+	if (!programDepthTest->prepare(dj::depthTestMat_vsSource, dj::depthTestMat_fsSource, log, std::string("Depth Test Shader")))
+	{
+		return false;
+	}
+
+	if (!programSkybox->prepare(dj::skybox_vsSource, dj::skybox_fsSource, log, std::string("Skybox Shader")))
+	{
+		return false;
+	}
+
+	if (!programDebugMesh->prepare(dj::debugMesh_vsSource, dj::debugMesh_fsSource, log, std::string("Debug Mesh Shader"), dj::debugMesh_gsSource))
+	{
+		return false;
+	}
+
+	if (!programDepthTestCube->prepare(dj::depthTestCube_vsSource, dj::depthTestCube_fsSource, log, std::string("Depth Test Cube"), dj::depthTestCube_gsSource))
+	{
+		return false;
+	}
+
+	programs.insert({ dj::EngineProgramID::prePBR, program });
+	programs.insert({ dj::EngineProgramID::postProcessing, programFBO });
+	programs.insert({ dj::EngineProgramID::depth, programDepthTest });
+	programs.insert({ dj::EngineProgramID::skybox, programSkybox });
+	programs.insert({ dj::EngineProgramID::debugMesh, programDebugMesh });
+	programs.insert({ dj::EngineProgramID::depthCube, programDepthTestCube });
+	return true;
+}
+
+bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms)
+{
+	unsigned int uniformsCount = 0u;
+	unsigned int uniformsOkCount = 0u;
+	auto check = [&uniformsCount, &uniformsOkCount](bool success)
+		{
+			++uniformsCount;
+			if (success)
+			{
+				++uniformsOkCount;
+			}
+		};
+
+	auto registerLightsUniforms = [&check](dj::ProgramPtr& program, const unsigned int lightsCount, const char* postfix)
+		{
+			for (unsigned int i = 0; i < lightsCount; ++i)
+			{
+				std::string name = "u_light[" + std::to_string(i) + "]." + postfix;
+				check(program->registerUniform(name));
+			}
+		};
+
+	try
+	{
+		dj::ProgramPtr prePBRProgram = enginePrograms.at(dj::EngineProgramID::prePBR);
+		dj::ProgramPtr postprocessProgram = enginePrograms.at(dj::EngineProgramID::postProcessing);
+		dj::ProgramPtr depthProgram = enginePrograms.at(dj::EngineProgramID::depth);
+		dj::ProgramPtr depthCubeProgram = enginePrograms.at(dj::EngineProgramID::depthCube);
+		dj::ProgramPtr skyboxProgram = enginePrograms.at(dj::EngineProgramID::skybox);
+		dj::ProgramPtr debugMeshProgram = enginePrograms.at(dj::EngineProgramID::debugMesh);
+
+		// These uniforms needs to be after program use
+		prePBRProgram->use();
+		constexpr unsigned int lightsCount = 4u;
+		prePBRProgram->addUniformLimit(dj::Engine::UniformLimits::maxLightsCount, lightsCount);
+		prePBRProgram->addUniformLimit(dj::Engine::UniformLimits::maxPointLightsCount, 2u);
+		prePBRProgram->addUniformLimit(dj::Engine::UniformLimits::maxSpotLightsCount, 2u);
+		check(prePBRProgram->registerUniform("u_model"));
+		check(prePBRProgram->registerUniform("u_mvp"));
+		check(prePBRProgram->registerUniform("u_normalMat"));
+		check(prePBRProgram->registerUniform("u_wCamPos"));
+
+		check(prePBRProgram->registerUniform("u_material.albedo"));
+		check(prePBRProgram->registerUniform("u_material.roughness"));
+		check(prePBRProgram->registerUniform("u_material.metallic"));
+		check(prePBRProgram->registerUniform("u_material.normal"));
+		check(prePBRProgram->registerUniform("u_skybox"));
+
+		check(prePBRProgram->registerUniform("u_cubeShadow[0]"));
+		check(prePBRProgram->registerUniform("u_cubeShadow[1]"));
+		check(prePBRProgram->registerUniform("u_shadow[0]"));
+		check(prePBRProgram->registerUniform("u_shadow[1]"));
+
+		check(prePBRProgram->registerUniform("u_lightsCount"));
+		check(prePBRProgram->registerUniform("u_lightNear"));
+		check(prePBRProgram->registerUniform("u_lightFar"));
+		check(prePBRProgram->registerUniform("u_lightVP[0]"));
+		check(prePBRProgram->registerUniform("u_lightVP[1]"));
+
+		registerLightsUniforms(prePBRProgram, lightsCount, "pos");
+		registerLightsUniforms(prePBRProgram, lightsCount, "color");
+		registerLightsUniforms(prePBRProgram, lightsCount, "range");
+		registerLightsUniforms(prePBRProgram, lightsCount, "type");
+		registerLightsUniforms(prePBRProgram, lightsCount, "dir");
+		registerLightsUniforms(prePBRProgram, lightsCount, "spotExtCos");
+		registerLightsUniforms(prePBRProgram, lightsCount, "spotIntCos");
+		registerLightsUniforms(prePBRProgram, lightsCount, "shadowActive");
+		// Assigning Texture Units to the uniforms. Such assignment is kept in the active Program
+		//prePBRProgram->assignTextureUnit("u_material.albedo", GL_TEXTURE0);
+		//prePBRProgram->assignTextureUnit("u_material.roughness", GL_TEXTURE1);
+		//prePBRProgram->assignTextureUnit("u_material.metallic", GL_TEXTURE2);
+		//prePBRProgram->assignTextureUnit("u_material.normal", GL_TEXTURE3);
+		//prePBRProgram->assignTextureUnit("u_cubeShadow[0]", GL_TEXTURE6);
+		//prePBRProgram->assignTextureUnit("u_cubeShadow[1]", GL_TEXTURE7);
+		//prePBRProgram->assignTextureUnit("u_shadow[0]", GL_TEXTURE8);
+		//prePBRProgram->assignTextureUnit("u_shadow[1]", GL_TEXTURE9);
+		//prePBRProgram->assignTextureUnit("u_skybox", GL_TEXTURE10);
+
+		postprocessProgram->use();
+		check(postprocessProgram->registerUniform("frame"));
+		postprocessProgram->assignTextureUnit("frame", GL_TEXTURE11);
+
+		skyboxProgram->use();
+		check(skyboxProgram->registerUniform("u_camRP"));
+		check(skyboxProgram->registerUniform("u_skybox"));
+		//skyboxProgram->assignTextureUnit("u_skybox", GL_TEXTURE10);
+
+		debugMeshProgram->use();
+		check(debugMeshProgram->registerUniform("u_model"));
+		check(debugMeshProgram->registerUniform("u_view"));
+		check(debugMeshProgram->registerUniform("u_normalMat"));
+		check(debugMeshProgram->registerUniform("u_proj"));
+		check(debugMeshProgram->registerUniform("u_axisLength"));
+		check(debugMeshProgram->registerUniform("u_debugSelection"));
+
+		depthProgram->use();
+		check(depthProgram->registerUniform("u_camVP"));
+		check(depthProgram->registerUniform("u_model"));
+		check(depthProgram->registerUniform("u_near"));
+		check(depthProgram->registerUniform("u_far"));
+
+		depthCubeProgram->use();
+		check(depthCubeProgram->registerUniform("u_model"));
+		check(depthCubeProgram->registerUniform("u_cameraMatrices[0]"));
+		check(depthCubeProgram->registerUniform("u_cameraMatrices[1]"));
+		check(depthCubeProgram->registerUniform("u_cameraMatrices[2]"));
+		check(depthCubeProgram->registerUniform("u_cameraMatrices[3]"));
+		check(depthCubeProgram->registerUniform("u_cameraMatrices[4]"));
+		check(depthCubeProgram->registerUniform("u_cameraMatrices[5]"));
+		check(depthCubeProgram->registerUniform("u_far"));
+		check(depthCubeProgram->registerUniform("u_lightPos"));
+
+		if (uniformsCount != uniformsOkCount)
+		{
+			std::cerr << dj::Log::failPrefix() << "Could not locate in programs all required uniforms. Located " << uniformsOkCount << " out of " << uniformsCount << std::endl;
+			return false;
+		}
+	}
+	catch (const std::out_of_range& ex)
+	{
+		std::cerr << dj::Log::failPrefix() << __FUNCTION__ << "() Out of Range: " << ex.what() << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	return true;
+}
+
+GLenum channelsToColorFormat(const TextureData& tex)
+{
+	GLenum colorFormat = GL_RED;
+	switch (tex.getChannelsCount())
+	{
+	case 1: colorFormat = GL_RED; break;
+	case 2: colorFormat = GL_RG; break;
+	case 3: colorFormat = GL_RGB; break;
+	case 4: colorFormat = GL_RGBA; break;
+	default: break;
+	};
+
+	return colorFormat;
+}
+
+bool loadCubemap(dj::TextureContainer& tc, const char* pathPrefix, const char* fileType)
+{
+	const unsigned int sidesCount = 6;
+	const char* const pathSufixes[sidesCount] = { "right", "left", "top", "bottom", "front", "back" };
+	const GLenum sides[sidesCount] = { GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+										GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+										GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+										GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+										GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+										GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  };
+	
+	dj::Texture tex(GL_TEXTURE_CUBE_MAP);
+	tex.bind();
+	tex.setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+	tex.setFiltering(GL_LINEAR, GL_LINEAR);
+
+	for (unsigned int i = 0; i < sidesCount; ++i)
+	{
+		std::string path = std::string(pathPrefix) + std::string(pathSufixes[i]) + std::string(fileType);
+		TextureData texD(path.c_str());
+
+		if (!texD.isOk())
+		{
+			std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;
+			glfwTerminate();
+			return 0;
+		}
+
+		GLenum colorFormat = channelsToColorFormat(texD);
+		tex.setSize(texD.getWidth(), texD.getHeight());
+
+		if(!tex.transferDataCubeSide(sides[i], GL_SRGB, colorFormat, GL_UNSIGNED_BYTE, texD.getData(), false))
+		{
+			std::cerr << dj::Log::failPrefix() << "Could not send texture to GPU: " << path << std::endl;
+			glfwTerminate();
+			return false;
+		}
+	}
+
+	if(!tc.addTexture(std::move(tex), dj::TextureTag::TextureCube, dj::TextureTag::File))
+	{
+		std::cerr << dj::Log::failPrefix() << "Could not add texture to TextureContainer: " << pathPrefix << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	std::cout << dj::Log::okPrefix() << "Loaded Cubemap: " << pathPrefix << "; Size: " << tex.getWidth() << ", " << tex.getHeight() << std::endl;
+
+	return true;
+}
+
+bool loadTexture2D(dj::TextureContainer &tc, const char* path, bool srgb)
+{
+	dj::Texture tex(GL_TEXTURE_2D);
+	tex.setWrapping(GL_REPEAT, GL_REPEAT);
+	tex.setFiltering(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+
+	TextureData texD(path, true);
+	if (!texD.isOk())
+	{
+		std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	GLenum colorFormat = channelsToColorFormat(texD);
+	GLenum imageColorFormat = ((colorFormat == GL_RGB && srgb) ? GL_SRGB : colorFormat);
+
+	// Sending texture data to GPU
+	tex.setSize(texD.getWidth(), texD.getHeight());
+	if (!tex.transferData2D(imageColorFormat, colorFormat, GL_UNSIGNED_BYTE, texD.getData(), true))
+	{
+		std::cerr << dj::Log::failPrefix() << "Could not send texture to GPU: " << path << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	//glTexParameteri(tex.getTextureTypeInfo().glType, GL_TEXTURE_BASE_LEVEL, 0);
+
+	if (!tc.addTexture(std::move(tex), dj::TextureTag::Texture2D, dj::TextureTag::File))
+	{
+		std::cerr << dj::Log::failPrefix() << "Could not add texture to TextureContainer: " << path << std::endl;
+		glfwTerminate();
+		return false;
+	}
+	
+	std::cout << dj::Log::okPrefix() << "Loaded Texture: " << path << "; Size: " << texD.getWidth() << ", " << texD.getHeight() << "; Channels: " << texD.getChannelsCount() << std::endl;
+
+	return true;
+}
+
+bool loadTexturesPBR(dj::TextureContainer& tc, const std::string& path, const std::string& extension)
+{
+	static const std::string normalSuffix = "normal-ogl";
+	static const std::array<std::string, 4> suffixes = {
+		"albedo",
+		"roughness",
+		"metallic",
+		normalSuffix,
+	};
+
+	for (const auto suffix : suffixes)
+	{
+		const std::string fullPath = path + suffix + extension;
+		bool srgb = (suffix != normalSuffix);
+		
+		if (!loadTexture2D(tc, fullPath.c_str(), srgb))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+int loadTextures(dj::TextureContainer& tc)
+{
+	static constexpr unsigned int texturesCount = 2;
+	static const char* const texturePaths[texturesCount] = {
+		"res/textures/peeling-painted-metal-bl/peeling-painted-metal_",
+		//"res/textures/alien-panels-bl/alien-panels_",
+		//"res/textures/worn-painted-metal-bl/worn-painted-metal_",
+		//"res/textures/bricks-mortar-bl/bricks-mortar-",
+		//"res/textures/dirty-flat-stonework-bl/dirty-flat-stonework_",
+		"res/textures/windswept-wasteland-bl/windswept-wasteland_",
+		//"res/textures/windswept-wasteland-bl_512/windswept-wasteland_",
+		//"res/textures/square-block-vegetation-bl/square-blocks-vegetation_",
+		//"res/textures/rough-wet-cobble-bl/rough-wet-cobble-",
+	};
+
+	for (unsigned i = 0; i < texturesCount; ++i)
+	{
+		if (!loadTexturesPBR(tc, texturePaths[i], ".png"))
+		{
+			return false;
+		}
+	}
+
+	// Load cubemaps
+	if (!loadCubemap(tc, "res/textures/skybox/", ".jpg"))
+	{
+		return false;
+	}
+
+	std::cout << dj::Log::infoPrefix() << "Estimated textures size in VRAM: " << (tc.getTexturesSize() / (1024u * 1024u)) << "MB" << std::endl;
+
+	return true;
+}
+
+void configureRasterization()
+{
+	//glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects)
+{
+	//Mesh initialization
+	dj::Mesh triangleMesh;
+	triangleMesh.addVertices(dj::triangleVerts, sizeof(dj::triangleVerts) / dj::vertexSize);
+	triangleMesh.addIndices(dj::triangleIndices, sizeof(dj::triangleIndices) / sizeof(unsigned int));
+	triangleMesh.computeBoundingBox();
+	if (!triangleMesh.computeTangents())
+	{
+		std::cerr << "Tangents computation for triangleMesh FAILED\n";
+	}
+
+	dj::Mesh triWallCubeMesh;
+	triWallCubeMesh.addVertices(dj::triWallCubeVerts, sizeof(dj::triWallCubeVerts) / dj::vertexSize);
+	triWallCubeMesh.addIndices(dj::triWallCubeIndices, sizeof(dj::triWallCubeIndices) / sizeof(unsigned int));
+	triWallCubeMesh.computeBoundingBox();
+	if (!triWallCubeMesh.computeTangents())
+	{
+		std::cerr << "Tangents computation for triWallCubeMesh FAILED\n";
+	}
+
+	dj::Mesh planeMesh;
+	planeMesh.addVertices(dj::planeVerts, sizeof(dj::planeVerts) / dj::vertexSize);
+	planeMesh.addIndices(dj::planeIndices, sizeof(dj::planeIndices) / sizeof(unsigned int));
+	planeMesh.computeBoundingBox();
+	if (!planeMesh.computeTangents())
+	{
+		std::cerr << "Tangents computation for planeMesh FAILED\n";
+	}
+
+	dj::Mesh boxMesh;
+	boxMesh.addVertices(dj::boxVerts, sizeof(dj::boxVerts) / dj::vertexSize);
+	boxMesh.addIndices(dj::boxIndices, sizeof(dj::boxIndices) / sizeof(unsigned int));
+	boxMesh.computeBoundingBox();
+	if (!boxMesh.computeTangents())
+	{
+		std::cerr << "Tangents computation for boxMesh FAILED\n";
+	}
+
+	//All meshes
+	dj::MeshAlignment triangleMeshIndices = meshData.addMesh(triangleMesh);
+	dj::MeshAlignment triWallCubeIndices = meshData.addMesh(triWallCubeMesh);
+	dj::MeshAlignment planeIndices = meshData.addMesh(planeMesh);
+	dj::MeshAlignment boxIndices = meshData.addMesh(boxMesh);
+	dj::ObjectPtr triangleObject(std::make_shared<dj::Object>(triangleMeshIndices, triangleMesh.getBoundingBox(), "Triangle"));
+	dj::ObjectPtr triWallCubeObject(std::make_shared<dj::Object>(triWallCubeIndices, triWallCubeMesh.getBoundingBox(), "TriWallCube"));
+	dj::ObjectPtr planeObject(std::make_shared<dj::Object>(planeIndices, planeMesh.getBoundingBox(), "Plane"));
+	dj::ObjectPtr cubeObject(std::make_shared<dj::Object>(boxIndices, boxMesh.getBoundingBox(), "Cube"));
+
+	//Initial object settings
+	//triangleObject->setDefaultMaterial(material);
+	//triWallCubeObject->setDefaultMaterial(material);
+	//planeObject->setDefaultMaterial(material);
+	//cubeObject->setDefaultMaterial(material);
+
+	objects.push_back(triangleObject);
+	objects.push_back(triWallCubeObject);
+	objects.push_back(planeObject);
+	objects.push_back(cubeObject);
+}
+
+void setDefaultMaterials(std::vector<dj::ObjectPtr>& objects, dj::MaterialPtr mat)
+{
+	for (const dj::ObjectPtr& obj : objects)
+	{
+		obj->setDefaultMaterial(mat);
+	}
+}
+
+void setMaterials(std::vector<dj::ObjectInstancePtr>& objectInstances, const std::vector<dj::MaterialPtr>& materials)
+{
+	assert(objectInstances.size() >= 3u);
+	assert(materials.size() >= 2u);
+	objectInstances[2]->setMaterial(materials[1]);
+}
+
+void createObjectInstances(const std::vector<dj::ObjectPtr>& objects, std::vector<dj::ObjectInstancePtr>& objectInstances)
+{
+	assert(objects.size() >= 4);
+	if (objects.size() >= 4)
+	{
+		dj::ObjectPtrConst triangleObj = objects[0];
+		dj::ObjectPtrConst triWallCubeObj = objects[1];
+		dj::ObjectPtrConst planeObj = objects[2];
+		dj::ObjectPtrConst cubeObj = objects[3];
+
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(triangleObj));
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(triWallCubeObj));
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(planeObj));
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(cubeObj));
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(triangleObj));
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(cubeObj));
+		objectInstances.push_back(std::make_shared<dj::ObjectInstance>(cubeObj));
+	}
+}
+
+void loadLights(std::vector<dj::LightPtr>& lights)
+{
+	dj::LightPtr light1(std::make_shared<dj::Light>(dj::Light::Type::Point, true));
+	dj::LightPtr light2(std::make_shared<dj::Light>(dj::Light::Type::Point, true));
+	dj::LightPtr light3(std::make_shared<dj::Light>(dj::Light::Type::Spot, true));
+	dj::LightPtr light4(std::make_shared<dj::Light>(dj::Light::Type::Spot, true));
+
+	light1->set({ 0.8f, 0.8f, 1.0f }, 100.0f, 20.0f);	// 1.0f
+	light1->setPosition(-2.0f, 5.0f, 0.0f);
+
+	light2->set({ 1.0f, 0.8f, 0.8f }, 100.0f, 40.0f); // 3.0f
+	light2->setPosition(6.0f, 3.0f, -1.0f);
+
+	light3->set({ 1.0f, 0.3f, 0.3f }, 100.0f, 100.0f);	// 100.0f
+	light3->setPosition(-1.0f, 2.0f, -2.0f);
+	light3->setDirection(-40.0f, 0.0f);
+	light3->setSpotAngles(60.0f, 55.0f);
+
+	light4->set({ 0.3f, 0.3f, 1.0f }, 200.0f, 30.0f);	// 200.0f
+	light4->setPosition(-1.0f, 1.0f, -1.0f);
+	light4->setDirection(-40.0f, 180.0f);
+	light4->setSpotAngles(60.0f, 1.0f);
+
+	lights.push_back(light1);
+	lights.push_back(light2);
+	lights.push_back(light3);
+	lights.push_back(light4);
+}
+
+bool createShadows(const std::vector<dj::LightPtr>& lights, 
+					std::vector<dj::LightFramebufferBinding>& spotFBOs,
+					std::vector<dj::LightFramebufferBinding>& pointFBOs)
+{
+	constexpr unsigned int c_shadowRes = 1024u;
+	bool ok = true;
+
+	for (dj::LightPtr light : lights)
+	{
+		if (light->getType() == dj::Light::Type::Spot)
+		{
+			std::cout << "Creating Framebuffer for 2D Shadow\n";
+
+			dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_2D);
+			tex->bind();
+			tex->setSize(c_shadowRes, c_shadowRes);
+			tex->setFiltering(GL_NEAREST, GL_NEAREST);
+			tex->setWrapping(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
+			tex->setBorderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+			tex->transferData2D(GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+			dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
+			fbo->bind();
+			fbo->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
+			fbo->nullifyData();
+
+			ok &= verifyFramebufferStatus(fbo->getFramebufferStatus());
+			fbo->unbind();
+
+			spotFBOs.push_back({light, fbo});
+		}
+		else if (light->getType() == dj::Light::Type::Point)
+		{
+			std::cout << "Creating Framebuffer for Cubemap Shadow\n";
+
+			const static GLenum sides[6] = {
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+				GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+				GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+				GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+				GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+			};
+
+			// Create Cube-Texture
+			dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_CUBE_MAP);
+			tex->bind();
+			tex->setSize(c_shadowRes, c_shadowRes);
+			tex->setFiltering(GL_LINEAR, GL_LINEAR);
+			tex->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
+			for (unsigned int i = 0; i < 6; ++i)
+			{
+				tex->transferDataCubeSide(sides[i], GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr, false);
+			}
+
+			// Create Framebuffer (Cube)
+			dj::FramebufferPtr cubeDepthFBO = std::make_shared<dj::Framebuffer>();
+			cubeDepthFBO->bind();
+			cubeDepthFBO->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
+			cubeDepthFBO->nullifyData();
+			ok &= verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
+			cubeDepthFBO->unbind();
+
+			pointFBOs.push_back({light, cubeDepthFBO});
+		}
+	}
+
+	return ok;
+}
+
+bool createShadows(const std::vector<dj::LightPtr>& lights,
+					std::vector<std::pair<dj::LightPtr, dj::ShadowFramebufferPtr>>& shadows,
+					std::vector<std::pair<dj::LightPtr, std::pair<dj::TexturePtr, dj::FramebufferPtr>>>& pointShadows)
+{
+	constexpr unsigned int c_shadowRes = 1024u;
+
+	for (dj::LightPtr light : lights)
+	{
+		if (light->getType() == dj::Light::Type::Spot)
+		{
+			//static const float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+			//dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_2D);
+			//tex->bind();
+			//tex->setSize(c_shadowRes, c_shadowRes);
+			//tex->setFiltering(GL_NEAREST, GL_NEAREST);
+			//tex->setWrapping(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
+			//glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+			//dj::FramebufferPtr spotDepthFBO = std::make_shared<dj::Framebuffer>();
+			//spotDepthFBO->bind();
+			//spotDepthFBO->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
+			//spotDepthFBO->nullifyData();
+			//verifyFramebufferStatus(spotDepthFBO->getFramebufferStatus());
+			//spotDepthFBO->unbind();
+
+			std::cout << "Creating ShadowFramebuffer\n";
+
+			shadows.push_back({ light, std::make_shared<dj::ShadowFramebuffer>(c_shadowRes) });
+			auto &shadow = shadows.back();
+			
+			if (!verifyFramebufferStatus(shadow.second->getFramebufferStatus()))
+			{
+				return false;
+			}
+
+			//auto texFBOpair = std::make_pair(tex, spotDepthFBO);
+			//auto pair = std::make_pair(light, texFBOpair);
+			//pointShadows.push_back(pair);
+		}
+
+		if (light->getType() == dj::Light::Type::Point)
+		{
+			std::cout << "Creating Point Shadows Texture\n";
+			const static GLenum sides[6] = {
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+				GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+				GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+				GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+				GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+			};
+			dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_CUBE_MAP);
+			tex->bind();
+			tex->setSize(c_shadowRes, c_shadowRes);
+			tex->setFiltering(GL_LINEAR, GL_LINEAR);
+			tex->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+			
+			//dj::TextureID tex;
+			//glGenTextures(1, &tex);
+			//glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
+			for (unsigned int i = 0; i < 6; ++i)
+			{
+				tex->transferDataCubeSide(sides[i], GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr, false);
+				//glTexImage2D(sides[i], 0, GL_DEPTH_COMPONENT, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+				
+				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+			}
+			
+			dj::FramebufferPtr cubeDepthFBO = std::make_shared<dj::Framebuffer>();
+			cubeDepthFBO->bind();
+			cubeDepthFBO->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
+			cubeDepthFBO->nullifyData();
+			verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
+			cubeDepthFBO->unbind();
+
+			//dj::FramebufferID cubeDepthFBO;
+			//glGenFramebuffers(1, &cubeDepthFBO);
+			//glBindFramebuffer(GL_FRAMEBUFFER, cubeDepthFBO);
+			//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, tex, 0);
+			//glDrawBuffer(GL_NONE);
+			//glReadBuffer(GL_NONE);
+			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			auto texFBOpair = std::make_pair(tex, cubeDepthFBO);
+			auto pair = std::make_pair(light, texFBOpair);
+			pointShadows.push_back(pair);
+		}
+	}
+
+	return true;
+}
+
+bool createMaterials(std::vector<dj::MaterialPtr>& materials,
+	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
+	const std::vector<dj::TexturePtr>& textures)
+{
+	try
+	{
+		dj::ProgramPtr prePBRProgram = enginePrograms.at(dj::EngineProgramID::prePBR);
+		dj::ProgramPtr postprocessProgram = enginePrograms.at(dj::EngineProgramID::postProcessing);
+		dj::ProgramPtr depthProgram = enginePrograms.at(dj::EngineProgramID::depth);
+		dj::ProgramPtr skyboxProgram = enginePrograms.at(dj::EngineProgramID::skybox);
+		
+		dj::MaterialPtr material = std::make_shared<dj::Material>();
+		dj::MaterialPtr material2 = std::make_shared<dj::Material>();
+		dj::MaterialPtr materialSkybox = std::make_shared<dj::Material>();
+		dj::MaterialPtr materialDebugCube = std::make_shared<dj::Material>();
+		materials.push_back(material);
+		materials.push_back(material2);
+		materials.push_back(materialSkybox);
+		materials.push_back(materialDebugCube);
+
+		material->setProgram(prePBRProgram);
+		material2->setProgram(prePBRProgram);
+		material->addTexture(textures.at(0)->getTextureTypeInfo(), "u_material.albedo");
+		material->addTexture(textures.at(1)->getTextureTypeInfo(), "u_material.roughness");
+		material->addTexture(textures.at(2)->getTextureTypeInfo(), "u_material.metallic");
+		material->addTexture(textures.at(3)->getTextureTypeInfo(), "u_material.normal");
+		//material->addTexture(textures.at(4)->getTextureTypeInfo(), "u_skybox");
+		material2->addTexture(textures.at(4)->getTextureTypeInfo(), "u_material.albedo");
+		material2->addTexture(textures.at(5)->getTextureTypeInfo(), "u_material.roughness");
+		material2->addTexture(textures.at(6)->getTextureTypeInfo(), "u_material.metallic");
+		material2->addTexture(textures.at(7)->getTextureTypeInfo(), "u_material.normal");
+		material->addTexture(textures.at(8)->getTextureTypeInfo(), "u_skybox");
+		material2->addTexture(textures.at(8)->getTextureTypeInfo(), "u_skybox");
+		
+		materialSkybox->setProgram(skyboxProgram);
+		materialSkybox->addTexture(textures.at(8)->getTextureTypeInfo(), "u_skybox");
+
+		materialDebugCube->setProgram(skyboxProgram);
+	}
+	catch (const std::out_of_range& ex)
+	{
+		std::cerr << dj::Log::failPrefix() << __FUNCTION__ << "() Out of Range: " << ex.what() << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	return true;
+}
+
+void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances)
+{
+	assert(instances.size() >= 7);
+	instances[0]->setTranslation(1.0f, 2.0f, -10.0f);
+	instances[0]->setScale(10.0f, 5.0f, 1.0f);
+
+	instances[1]->setTranslation(-0.5f, 0.5f, -4.0f);
+	instances[1]->setScale(1.0f, 1.0f, 1.0f);
+
+	instances[2]->setTranslation(0.0f, 0.0f, -5.0f);
+	instances[2]->setScale(20.0f, 1.0f, 20.0f);
+
+	instances[3]->setTranslation(3.0f, 1.0f, -8.0f);
+	instances[3]->setScale(0.2f, 0.2f, 0.2f);
+
+	instances[4]->setTranslation(5.0f, 2.0f, 5.0f);
+	instances[4]->setScale(10.0f, 5.0f, 1.0f);
+	glm::mat4 obj4Rot = glm::rotate(glm::mat4(1.0f), glm::radians(-135.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	instances[4]->setRotation(obj4Rot);
+
+	instances[5]->setTranslation(-7.0f, -0.7f, -9.0f);
+	glm::mat4 obj5Rot = glm::rotate(glm::mat4(1.0f), glm::radians(33.0f), glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f)));
+	instances[5]->setRotation(obj5Rot);
+
+	instances[6]->setTranslation(-3.0f, 3.0f, 10.0f);
+	instances[6]->setScale(2.0f, 2.0f, 1.75f);
+}
+
+void manualObjectsTransformations(std::vector<dj::ObjectInstancePtr>& instances, const dj::TimeDrivenMovement &tdm)
+{
+	assert(instances.size() > 1);
+	static dj::LinearUpdate obj1RotY(tdm, 0.0f, glm::radians(45.0f));
+
+	instances[1]->setRotation(glm::rotate(glm::mat4(1.0f), obj1RotY.getVal(), glm::vec3(0.0f, 1.0f, 0.0f)));
+}
+
+void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMovement &tdm)
+{
+	const float diffS = 1000.0f / tdm.getFrameDiffMs().count();
+	// Per second
+	const float step = static_cast<float>(3.5f / diffS);
+	const float stepSideDeg = static_cast<float>(80.0f / diffS);
+	const float stepVDeg = static_cast<float>(60.0f / diffS);
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		camera.fly(glm::vec3(0.0f, 0.0f, -step));
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		camera.fly(glm::vec3(0.0f, 0.0f, step));
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		camera.fly(glm::vec3(step, 0.0f, 0.0f));
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		camera.fly(glm::vec3(-step, 0.0f, 0.0f));
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		camera.lookSide(-stepSideDeg);
+	}
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		camera.lookSide(stepSideDeg);
+	}
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+	{
+		camera.lookVerticaly(stepVDeg);
+	}
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+	{
+		camera.lookVerticaly(-stepVDeg);
+	}
+
+	camera.updateView();
+}
+
+// Activating Texture Unit (up to 32 TUs) - just to know on which texture unit is configured
+//void bindTextures(const std::vector<dj::TextureID>& textures)
+//{
+//	static const unsigned int maxTextureUnits = (GL_TEXTURE31 - GL_TEXTURE0);
+//	for (unsigned int i = 0; i < textures.size() && i < maxTextureUnits; ++i)
+//	{
+//		glActiveTexture(GL_TEXTURE0 + i);
+//		glBindTexture(GL_TEXTURE_2D, textures[i]);
+//	}
+//}
+
+void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& lights)
+{
+	for (unsigned int i = 0; i < lights.size(); ++i)
+	{
+		const std::string lightName = std::string("u_light[") + std::to_string(i) + std::string("].");
+		std::string posName = lightName + std::string("pos");
+		std::string colorName = lightName + std::string("color");
+		std::string rangeName = lightName + std::string("range");
+		std::string typeName = lightName + std::string("type");
+		std::string dirName = lightName + std::string("dir");
+		std::string spotExtCosName = lightName + std::string("spotExtCos");
+		std::string spotIntCosName = lightName + std::string("spotIntCos");
+		std::string shadowActiveName = lightName + std::string("shadowActive");
+
+		glUniform3fv(program->getUniformLocation(posName.c_str()), 1, glm::value_ptr(lights[i]->getPosition()));
+		glUniform3fv(program->getUniformLocation(colorName.c_str()), 1, glm::value_ptr(lights[i]->getColor() * lights[i]->getIntensity()));
+		glUniform1f(program->getUniformLocation(rangeName.c_str()), lights[i]->getRange());
+		glUniform1ui(program->getUniformLocation(typeName.c_str()), static_cast<GLuint>(lights[i]->getType()));
+		glUniform1i(program->getUniformLocation(shadowActiveName.c_str()), (lights[i]->isShadowActive() ? 1 : 0));
+		
+		if (lights[i]->getType() != dj::Light::Type::Point)
+		{
+			glUniform3fv(program->getUniformLocation(dirName.c_str()), 1, glm::value_ptr(lights[i]->getDirectionVector()));
+
+			if (lights[i]->getType() == dj::Light::Type::Spot)
+			{
+				glUniform1f(program->getUniformLocation(spotExtCosName.c_str()), glm::cos(glm::radians(lights[i]->getSpotlightAngle() / 2.0f)));
+				glUniform1f(program->getUniformLocation(spotIntCosName.c_str()), glm::cos(glm::radians(lights[i]->getSpotlightInternalAngle() / 2.0f)));
+			}
+		}
+	}
+
+	glUniform1ui(program->getUniformLocation("u_lightsCount"), static_cast<GLuint>(lights.size()));
+}
+
+bool checkFramebufferStatus(GLenum framebufferFlag)
+{
+	GLenum status = glCheckFramebufferStatus(framebufferFlag);
+	return verifyFramebufferStatus(status);
+}
+
+bool verifyFramebufferStatus(GLenum status)
+{
+	dj::Log log;
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::string errorMsg = std::string("Could not create Framebuffer. Error Code: ");
+		std::string errorCode;
+		switch (status)
+		{
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"; break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"; break;
+		case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"; break;
+		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER"; break;
+		case GL_FRAMEBUFFER_UNSUPPORTED: errorCode = "GL_FRAMEBUFFER_UNSUPPORTED"; break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"; break;
+		case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"; break;
+		case GL_FRAMEBUFFER_UNDEFINED: errorCode = "GL_FRAMEBUFFER_UNDEFINED"; break;
+		case GL_INVALID_ENUM: errorCode = "GL_INVALID_ENUM"; break;
+		default: errorCode = std::to_string(status);
+		}
+		errorMsg += errorCode;
+		log.ok = false;
+		log.print(errorMsg.c_str());
+
+		return false;
+	}
+
+	log.ok = true;
+	log.print("Succesfully created Framebuffer");
+	return true;
+}
+
+void reportFPS()
+{
+	static dj::TimeFlow<std::chrono::seconds> tf(std::chrono::seconds(5));
+	static unsigned int frameNo = 0;
+
+	if (tf.expirationCount())
+	{
+		tf.startFromLastPeriod();
+		std::cout << "FPS: " << (frameNo / 5) << std::endl;
+		frameNo = 0;
+	}
+
+	frameNo++;
+}
+
+void fbResizeCallback(GLFWwindow* window, int width, int height)
+{
+	GlobalSettings::getInstance().setWindowSize(width, height);
+}
+
+void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+	{
+		GlobalSettings::getInstance().changeCamera();
+	}
+	if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	{
+		GlobalSettings::getInstance().switchGammaCorrection();
+	}
+	if (key == GLFW_KEY_V && action == GLFW_PRESS)
+	{
+		GlobalSettings::getInstance().switchDebugVertices();
+	}
+	//if (key == GLFW_KEY_W && action == GLFW_PRESS)
+	//{
+	//	std::cout << "W key is pressed (event)\n";
+	//}
+	//else if (key == GLFW_KEY_W && action == GLFW_REPEAT)
+	//{
+	//	std::cout << "W key is being held (event)\n";
+	//}
+}
+
+void userCursorCallback(GLFWwindow* window, double xpos, double ypos)
+{
+	//std::cout << "Cursor position - x: " << xpos << ", y: " << ypos << std::endl;
+}
+
+void userScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	//std::cout << "Scroll offset: " << xoffset << ", " << yoffset << std::endl;
+}

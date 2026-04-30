@@ -1,0 +1,76 @@
+2026-04-30	ShadowFramebuffer - unplugged, out of use
+2026-04-23	TextureContainer - Redesigned to operate on TextureTags instead of on Purposes
+2025-11-07	Implemented CameraCube class - for cubemap shadows
+2025-11-07  RenderNodes - added CameraNodeProperty to RenderSkyboxWorldNode and RenderShadedWorldNode
+2025-11-05	RenderNodes - added CameraNodeProperty
+2025-11-04	RenderNodes - added cubeMapDebugNode
+2025-11-04	RenderNodes - updated IRenderNode to support input textures per node
+2025-11-02	Optimization - moved skybox rasterization to later stage (+5% performance)
+2025-11-02	RenderNodes - added depthUpdate flag in IRenderNode class for glDepthMask
+2025-11-02	RenderNodes - added RenderSkyboxWorldNode for rendering skybox
+2025-10-31	Shadows - fixed bug - not resizeable Point Light shadows in Render Loop
+2025-10-31	Render Nodes - added Texture Unit offsets in IRenderNode to restore Texture Unit number in IRenderWorldNode
+2025-10-31	Added 2nd material for one Object Instance
+2025-10-31	RenderShadedWorldNode, IRenderWorldNode, IRenderNode implemented for PBR case (and running)
+2025-10-29  All getUniformLocation() calls replaced by Program::getUniformLocation() - optimization
+2025-10-28  Program - added registerUniform() method and uniformLocations unordered map
+2025-10-27  Implemented uniforms in RenderShadedWorldNode
+2025-10-26  Added RenderNodes (IRenderNode, IRenderWorldNode, RenderShadedWorldNode)
+2025-09-26  Created RenderSet
+2025-09-26	Mutable in ObjectTransformation to allow lazy evaluation
+2025-09-23	Added BoundingBoxes
+2025-09-18	Framebuffer - added class Framebuffer
+2025-09-18	Materials - accepting texture assignments (but the ideas is a bit incorrect yet)
+2025-09-18	ObjectInstances
+2025-09-15	ObjectInstance added to vary between Objects and their instances
+2025-09-13	Shaders - Optimilization of shadows
+2025-09-13	Shadows - Smooth cubemap shadows
+2025-09-11	Shadows - support for 2 cubemap and 2 texture shaders
+2025-09-11	Shaders - Light type detection in PBR Shader
+2025-09-10	Debug - Added simple support for first Point Light shadow preview (instead of skybox)
+2025-09-10	Shadows - Added shadow for first Point Light
+2025-09-08	Optimization - moved inversion and transposition of normal matrix from Shaders to CPU
+2025-09-08	GlobalSettings - Added vertices debug switch
+2025-09-08	Shaders / Debug - Added shader for simple debugging meshes
+2025-09-08	Shaders - Accepting geometry shader source
+2025-09-05	Textures - estimation of textures size in VRAM
+2025-09-05	Textures - loading PBR textures (by their prefix)
+2025-09-05	Textures - TextureContainer class
+2025-09-04	Textures - first part of TextureContainer class
+2025-09-03	Textures - Texture class (for both: 2D and Cubemaps)
+2025-09-02	Framebuffer - GL_RGB16F dependent on Better Quality settings
+2025-09-02	Normal maps - Fixed bug with bitangents wrong calculation
+2025-09-01	Textures - sRGB for Albedo, Roughness and Metallic textures
+2025-09-01	Textures - fixed bug with not flipped texture
+2025-09-01	GLTF - Included TinyGLTF
+2025-08-31	Shaders - PBR Shader (but the effect is not intimidating)
+2025-08-30	Shaders - Changed specular map to roughness map
+2025-08-30	Programs - Engine Programs stored in enginePrograms map
+2025-08-30	Gamma Correction - only on main Framebuffer to see the difference
+2025-08-29	TimeDrivenMovement - classes for Linear and Wahwah interpolations + TimeFlow class
+2025-08-28	Cubemap - Reflections on surfaces
+2025-08-27	Cubemap - Skybox
+2025-08-27	Fixed bug with not initialized FOV in main camera
+2025-08-27	Added Cube / Box object
+2025-08-27	Shadows - Setting Near and Far Plane uniforms for both shaders (for linearization)
+2025-08-26	Shadows - Basic implementation of Soft Shadows dependent on distance
+2025-08-26	Shadows - 2 Shadow Maps for 2 Spot lights
+2025-08-26	GlobalSettings - added Camera switch to preview Shadows
+2025-08-26	Camera - added fields for Projection Matrix creation
+2025-08-26	Shadows - ShadowFramebuffer class created
+2025-08-25	Shadows - Shadow Map for single Spot Light
+2025-08-25	Fixed bug in ObjectTransformation - wrong order of multiplications
+2025-08-24  Framebuffer - First FBO and Simple Blur
+2025-08-24	GlobalSettings - Aspect Ratio calculation
+2025-08-24	GlobalSettings singleton class created
+2025-08-24	Program - Shaders compilation moved to Program class
+2025-08-23	Textures - Normal Maps
+2025-08-23	Tangent vector computation for Normal Maps in Mesh class
+2025-08-23	Fixed indexing for glDrawRangeElements in MeshData class
+2025-08-23	Shading - Halfway Vector
+2025-08-22	Textures - Specular Maps
+2025-08-21
+2025-08-20
+2025-08-19
+2025-08-18
+2025-08-17
