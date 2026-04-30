@@ -1,15 +1,20 @@
-﻿#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+﻿
+
 #include <iostream>
 #include <chrono>
 #include <vector>
 #include <map>
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 
 #include <memory>
+
+#include "MainWindow.h"
 
 #include "RenderNodes/RenderShadedWorldNode.h"
 #include "RenderNodes/RenderDepthWorldNode.h"
@@ -129,7 +134,6 @@ public:
 };
 
 // Helpers - Loaders
-GLFWwindow* init();
 bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
 bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
 GLenum channelsToColorFormat(const TextureData& tex);
@@ -174,7 +178,7 @@ void reportFPS();
 // Helpers - Callbacks
 void fbResizeCallback(GLFWwindow* window, int width, int height);
 void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void userCursorCallback(GLFWwindow* window, double xpos, double ypos);
+void userCursorCallback(GLFWwindow* window, double xPix, double yPix, double xNorm, double yNorm);
 void userScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Helpers - Render
@@ -261,6 +265,8 @@ void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr>& instances, dj:
 
 int main()
 {
+	
+
 	const GlobalSettings &gs = GlobalSettings::getInstance();
 	dj::TimeDrivenMovement tdm;
 
@@ -278,24 +284,27 @@ int main()
 	//return tgltfLoader.load("res/gltfs/twoCubes_altC_rot_texture_customProp/untitled.gltf");
 
 	// STAGE 1 :::: Window and Context Init
-	GLFWwindow* window = init();
-	if (!window)
+	dj::MainWindow mw(1200, 800, (1200.0f / 800.0f));
+	if (!mw.initGLFW(3, 3, "Prosty silnik"))
 	{
 		return -1;
 	}
+
+	mw.setKeyCallback(userInputCallback);
+	mw.setCursorPosCallback(userCursorCallback);
 
 	// STAGE 2 :::: Shader Programs Creation
 	// Loads, compiles and links shaders and generates Program ID
 	if (!loadEnginePrograms(enginePrograms))
 	{
-		glfwTerminate();
+		mw.terminate();
 		return -1;
 	}
 
 	// Setups Texture Units
 	if (!setupEnginePrograms(enginePrograms))
 	{
-		glfwTerminate();
+		mw.terminate();
 		return -1;
 	}
 
@@ -323,7 +332,7 @@ int main()
 	fbo->genRenderbufferAttachment(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
 	if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
 	{
-		glfwTerminate();
+		mw.terminate();
 		return -1;
 	}
 	fbo->unbind();
@@ -343,7 +352,7 @@ int main()
 	// STAGE 6 :::: FBO for shadow maps
 	if (!createShadows(lights, spotFBOs, pointFBOs))
 	{
-		glfwTerminate();
+		mw.terminate();
 		return -1;
 	}
 
@@ -380,12 +389,14 @@ int main()
 	// STAGE 7 :::: Materials Creation
 	if (!loadTextures(tc))
 	{
+		mw.terminate();
 		return -1;
 	}
 
 	// Materials configuration
 	if (!createMaterials(materials, enginePrograms, tc.getTextures(dj::TextureTag::File)))
 	{
+		mw.terminate();
 		return -1;
 	}
 	setDefaultMaterials(objects, materials[0]);
@@ -455,7 +466,7 @@ int main()
 
 
 	// STAGE 9 :::: Render Loop
-	while (!glfwWindowShouldClose(window))
+	while (!mw.getShouldClose())
 	{
 		// STAGE 9.1 :::: Internal logging
 		reportFPS();
@@ -477,7 +488,7 @@ int main()
 		lights[2]->setDirection(light2RotX.getVal(), -60.0f);
 		lights[3]->setDirection(-10.0f, light3RotY.getVal());
 
-		updateCamera(window, *camera, tdm);
+		updateCamera(mw.getWindow(), *camera, tdm);
 		manualObjectsTransformations(objectInstances, tdm);
 
 		// Stage 9.3 :::: Rendering
@@ -617,15 +628,14 @@ int main()
 		glDisable(GL_FRAMEBUFFER_SRGB);
 
 		// Display
-		glfwSwapBuffers(window);
+		mw.swapBuffers();
 
 		// Poll Events
-		glfwPollEvents();
+		mw.pollEvents();
 	}
 
 	/* Clear */
-	glfwDestroyWindow(window);
-	glfwTerminate();
+	mw.terminate();
 	return 0;
 }
 
@@ -679,42 +689,6 @@ void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr> &instances, dj:
 				(void*)(indicesIndexStart * sizeof(unsigned int)));
 		}
 	}
-}
-
-GLFWwindow* init()
-{
-	glfwInit();
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	GlobalSettings& gs = GlobalSettings::getInstance();
-	GLFWwindow* window = glfwCreateWindow(gs.getWidth(), gs.getHeight(), "Prosty Silnik", NULL, NULL);
-
-	if (!window)
-	{
-		std::cerr << "Could not create GLFW Window\n";
-		glfwTerminate();
-		return nullptr;
-	}
-
-	glfwMakeContextCurrent(window);
-
-	// Window and Input Callbacks
-	glfwSetFramebufferSizeCallback(window, fbResizeCallback);
-	glfwSetKeyCallback(window, userInputCallback);
-	glfwSetCursorPosCallback(window, userCursorCallback);
-	glfwSetScrollCallback(window, userScrollCallback);
-
-	if (glewInit() != GLEW_OK)
-	{
-		std::cerr << "Could not init GLEW\n";
-		glfwTerminate();
-		return nullptr;
-	}
-
-	return window;
 }
 
 bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& programs)
@@ -888,7 +862,6 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 	catch (const std::out_of_range& ex)
 	{
 		std::cerr << dj::Log::failPrefix() << __FUNCTION__ << "() Out of Range: " << ex.what() << std::endl;
-		glfwTerminate();
 		return false;
 	}
 
@@ -934,8 +907,7 @@ bool loadCubemap(dj::TextureContainer& tc, const char* pathPrefix, const char* f
 		if (!texD.isOk())
 		{
 			std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;
-			glfwTerminate();
-			return 0;
+			return false;
 		}
 
 		GLenum colorFormat = channelsToColorFormat(texD);
@@ -944,7 +916,6 @@ bool loadCubemap(dj::TextureContainer& tc, const char* pathPrefix, const char* f
 		if(!tex.transferDataCubeSide(sides[i], GL_SRGB, colorFormat, GL_UNSIGNED_BYTE, texD.getData(), false))
 		{
 			std::cerr << dj::Log::failPrefix() << "Could not send texture to GPU: " << path << std::endl;
-			glfwTerminate();
 			return false;
 		}
 	}
@@ -952,7 +923,6 @@ bool loadCubemap(dj::TextureContainer& tc, const char* pathPrefix, const char* f
 	if(!tc.addTexture(std::move(tex), dj::TextureTag::TextureCube, dj::TextureTag::File))
 	{
 		std::cerr << dj::Log::failPrefix() << "Could not add texture to TextureContainer: " << pathPrefix << std::endl;
-		glfwTerminate();
 		return false;
 	}
 
@@ -971,7 +941,6 @@ bool loadTexture2D(dj::TextureContainer &tc, const char* path, bool srgb)
 	if (!texD.isOk())
 	{
 		std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;
-		glfwTerminate();
 		return false;
 	}
 
@@ -983,7 +952,6 @@ bool loadTexture2D(dj::TextureContainer &tc, const char* path, bool srgb)
 	if (!tex.transferData2D(imageColorFormat, colorFormat, GL_UNSIGNED_BYTE, texD.getData(), true))
 	{
 		std::cerr << dj::Log::failPrefix() << "Could not send texture to GPU: " << path << std::endl;
-		glfwTerminate();
 		return false;
 	}
 
@@ -992,7 +960,6 @@ bool loadTexture2D(dj::TextureContainer &tc, const char* path, bool srgb)
 	if (!tc.addTexture(std::move(tex), dj::TextureTag::Texture2D, dj::TextureTag::File))
 	{
 		std::cerr << dj::Log::failPrefix() << "Could not add texture to TextureContainer: " << path << std::endl;
-		glfwTerminate();
 		return false;
 	}
 	
@@ -1305,7 +1272,6 @@ bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	catch (const std::out_of_range& ex)
 	{
 		std::cerr << dj::Log::failPrefix() << __FUNCTION__ << "() Out of Range: " << ex.what() << std::endl;
-		glfwTerminate();
 		return false;
 	}
 
@@ -1509,17 +1475,9 @@ void userInputCallback(GLFWwindow* window, int key, int scancode, int action, in
 	{
 		GlobalSettings::getInstance().switchDebugVertices();
 	}
-	//if (key == GLFW_KEY_W && action == GLFW_PRESS)
-	//{
-	//	std::cout << "W key is pressed (event)\n";
-	//}
-	//else if (key == GLFW_KEY_W && action == GLFW_REPEAT)
-	//{
-	//	std::cout << "W key is being held (event)\n";
-	//}
 }
 
-void userCursorCallback(GLFWwindow* window, double xpos, double ypos)
+void userCursorCallback(GLFWwindow* window, double xPix, double yPix, double xNorm, double yNorm)
 {
 	//std::cout << "Cursor position - x: " << xpos << ", y: " << ypos << std::endl;
 }

@@ -135,6 +135,7 @@
     <ClCompile Include="CameraCube.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="Light.cpp" />
+    <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshData.cpp" />
@@ -164,6 +165,7 @@
     <ClInclude Include="EngineKeywords.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="MainWindow.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshData.h" />
