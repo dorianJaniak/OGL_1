@@ -28,6 +28,7 @@ public:
 
 	int getWidth() const;
 	int getHeight() const;
+	float getAspectRatio() const;
 	bool getShouldClose() const;
 
 	void swapBuffers();

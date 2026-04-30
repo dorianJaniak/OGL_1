@@ -47,10 +47,7 @@
 
 class GlobalSettings
 {
-	unsigned int windowWidth;
-	unsigned int windowHeight;
 	unsigned int activeCameraIndex;
-	float aspectRatio;
 	bool gammaCorrection;
 	bool betterQuality;
 	unsigned int debugVertices;
@@ -60,8 +57,7 @@ class GlobalSettings
 		, gammaCorrection(false)
 		, betterQuality(true)
 		, debugVertices(0u)
-	{ 
-		setWindowSize(1200, 800);
+	{
 	}
 
 public:
@@ -73,21 +69,6 @@ public:
 	{
 		static GlobalSettings gs;
 		return gs;
-	}
-
-	unsigned int getWidth() const
-	{
-		return windowWidth;
-	}
-
-	unsigned int getHeight() const
-	{
-		return windowHeight;
-	}
-
-	float getAspectRatio() const
-	{
-		return aspectRatio;
 	}
 
 	unsigned int getActiveCameraIndex() const
@@ -108,13 +89,6 @@ public:
 	unsigned int getDebugVertices() const
 	{
 		return debugVertices;
-	}
-
-	void setWindowSize(unsigned int width, unsigned int height)
-	{
-		windowWidth = width;
-		windowHeight = height;
-		aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 	}
 
 	void changeCamera()
@@ -176,7 +150,6 @@ bool verifyFramebufferStatus(GLenum status);
 void reportFPS();
 
 // Helpers - Callbacks
-void fbResizeCallback(GLFWwindow* window, int width, int height);
 void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void userCursorCallback(GLFWwindow* window, double xPix, double yPix, double xNorm, double yNorm);
 void userScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
@@ -316,7 +289,7 @@ int main()
 	loadLights(lights);
 
 	// STAGE 4 :::: Cameras Configuration
-	camera->setPerspective(30.0f, gs.getAspectRatio(), 0.1f, 300.0f);
+	camera->setPerspective(30.0f, mw.getAspectRatio(), 0.1f, 300.0f);
 
 	// STAGE 5 :::: FBO Creation
 	dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
@@ -325,7 +298,7 @@ int main()
 	fboTexture->bind();
 	fboTexture->setFiltering(GL_NEAREST, GL_NEAREST);
 	fboTexture->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-	fboTexture->setSize(gs.getWidth(), gs.getHeight());
+	fboTexture->setSize(mw.getWidth(), mw.getHeight());
 	fboTexture->transferData2D(gs.isBetterQuality() ? GL_RGB16F : GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, nullptr, false);
 	
 	fbo->assignTextureAttachment(fboTexture, GL_COLOR_ATTACHMENT0);
@@ -610,7 +583,7 @@ int main()
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		glViewport(0, 0, gs.getWidth(), gs.getHeight());
+		glViewport(0, 0, mw.getWidth(), mw.getHeight());
 		enginePrograms[dj::EngineProgramID::postProcessing]->use();
 		glBindVertexArray(svbo);
 		glDisable(GL_DEPTH_TEST);
@@ -1454,11 +1427,6 @@ void reportFPS()
 	}
 
 	frameNo++;
-}
-
-void fbResizeCallback(GLFWwindow* window, int width, int height)
-{
-	GlobalSettings::getInstance().setWindowSize(width, height);
 }
 
 void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)

@@ -93,6 +93,11 @@ int MainWindow::getHeight() const
 	return height;
 }
 
+float MainWindow::getAspectRatio() const
+{
+	return aspectRatio;
+}
+
 bool MainWindow::getShouldClose() const
 {
 	if (window)
