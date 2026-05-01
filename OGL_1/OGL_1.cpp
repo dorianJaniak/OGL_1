@@ -15,6 +15,7 @@
 #include <memory>
 
 #include "MainWindow.h"
+#include "QualitySettings.h"
 
 #include "RenderNodes/RenderShadedWorldNode.h"
 #include "RenderNodes/RenderDepthWorldNode.h"
@@ -236,9 +237,16 @@ void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr>& instances, dj:
 *   STAGE 9.3.4 :::: Draw Main FBO \n
 */
 
+void basicSetupQualitySettings(dj::QualitySettings<4u>& quality)
+{
+	quality.set<dj::EngineSetting::Shadow2DResolution>(std::array{ 2048u, 1024u, 512u, 256u });
+	quality.set<dj::EngineSetting::ShadowCubeResolution>(std::array{ 1024u, 1024u, 512u, 256u });
+}
+
 int main()
 {
-	
+	dj::QualitySettings<4u> quality;
+	basicSetupQualitySettings(quality);
 
 	const GlobalSettings &gs = GlobalSettings::getInstance();
 	dj::TimeDrivenMovement tdm;
