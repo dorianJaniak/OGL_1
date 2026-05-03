@@ -15,9 +15,11 @@ enum class EngineSetting
 template <unsigned int QualityLevels>
 class QualitySettings
 {
+	unsigned int activeLevel;
+
 	std::tuple<
-		std::array<unsigned int, QualityLevels>, //Shadow2DResolution;
-		std::array<unsigned int, QualityLevels> //ShadowCubeResolution;
+		std::array<unsigned int, QualityLevels>,	//Shadow2DResolution;
+		std::array<unsigned int, QualityLevels>		//ShadowCubeResolution;
 	> engineSettings;
 
 	template <EngineSetting engineSetting>
@@ -29,44 +31,68 @@ class QualitySettings
 public:
 
 	QualitySettings()
+		: activeLevel(0)
 	{
 	}
 
 	QualitySettings(const QualitySettings& gs)
-		: engineSettings(gs.engineSettings)
+		: activeLevel(gs.activeLevel)
+		, engineSettings(gs.engineSettings)
 	{
 	}
 
 	QualitySettings(QualitySettings&&) = delete;
 
+	bool setQualityLevel(unsigned int level)
+	{
+		if (level < QualityLevels)
+		{
+			activeLevel = level;
+			return true;
+		}
+
+		return false;
+	}
+
+	unsigned int getQualityLevel() const
+	{
+		return activeLevel;
+	}
+
+	constexpr unsigned int getQualityLevels() const
+	{
+		return QualityLevels;
+	}
+
+	template <EngineSetting engineSetting>
+	constexpr auto get()
+	{
+		return getArray<engineSetting>()[activeLevel];
+	}
+
 	template <EngineSetting engineSetting, unsigned int QualityLevel>
 	constexpr auto get()
 	{
 		static_assert(QualityLevel < QualityLevels, "Quality Level out of bounds");
-		return get<engineSetting>()[QualityLevel];
+		return getArray<engineSetting>()[QualityLevel];
 	}
 
 	template <EngineSetting engineSetting, unsigned int QualityLevel, typename Type>
 	void set(Type value)
 	{
 		static_assert(QualityLevel < QualityLevels, "Quality Level out of bounds");
-		get<engineSetting>()[QualityLevel] = value;
+		getArray<engineSetting>()[QualityLevel] = value;
 	}
 
 	template <EngineSetting engineSetting, typename Type>
 	void set(const std::array<Type, QualityLevels>& values)
 	{
-		get<engineSetting>() = values;
-	}
-
-	constexpr unsigned int getQualityLevels()
-	{
-		return QualityLevels;
+		getArray<engineSetting>() = values;
 	}
 
 private:
 	template <EngineSetting engineSetting>
-	constexpr auto& get()
+	constexpr auto& getArray()
 	{
 		return std::get<EngineSettingIndex<engineSetting>::value>(engineSettings);
 	}
