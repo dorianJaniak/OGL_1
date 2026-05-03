@@ -9,6 +9,7 @@ enum class EngineSetting
 {
 	Shadow2DResolution,
 	ShadowCubeResolution,
+	MainFBHighPrecision,
 };
 
 // 0 - highest quality
@@ -18,8 +19,9 @@ class QualitySettings
 	unsigned int activeLevel;
 
 	std::tuple<
-		std::array<unsigned int, QualityLevels>,	//Shadow2DResolution;
-		std::array<unsigned int, QualityLevels>		//ShadowCubeResolution;
+		std::array<unsigned int, QualityLevels>,	//Shadow2DResolution
+		std::array<unsigned int, QualityLevels>,	//ShadowCubeResolution
+		std::array<bool, QualityLevels>				//MainFBHighPrecision
 	> engineSettings;
 
 	template <EngineSetting engineSetting>
@@ -27,6 +29,7 @@ class QualitySettings
 
 	template <> struct EngineSettingIndex<EngineSetting::Shadow2DResolution> : std::integral_constant<std::size_t, 0> {};
 	template <> struct EngineSettingIndex<EngineSetting::ShadowCubeResolution> : std::integral_constant<std::size_t, 1> {};
+	template <> struct EngineSettingIndex<EngineSetting::MainFBHighPrecision> : std::integral_constant<std::size_t, 2> {};
 
 public:
 
