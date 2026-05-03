@@ -5,7 +5,7 @@
 namespace dj
 {
 
-enum class EngineSetting
+enum class EngineQuality
 {
 	Shadow2DResolution,
 	ShadowCubeResolution,
@@ -22,14 +22,14 @@ class QualitySettings
 		std::array<unsigned int, QualityLevels>,	//Shadow2DResolution
 		std::array<unsigned int, QualityLevels>,	//ShadowCubeResolution
 		std::array<bool, QualityLevels>				//MainFBHighPrecision
-	> engineSettings;
+	> engineQualities;
 
-	template <EngineSetting engineSetting>
-	struct EngineSettingIndex;
+	template <EngineQuality engineQuality>
+	struct EngineQualityIndex;
 
-	template <> struct EngineSettingIndex<EngineSetting::Shadow2DResolution> : std::integral_constant<std::size_t, 0> {};
-	template <> struct EngineSettingIndex<EngineSetting::ShadowCubeResolution> : std::integral_constant<std::size_t, 1> {};
-	template <> struct EngineSettingIndex<EngineSetting::MainFBHighPrecision> : std::integral_constant<std::size_t, 2> {};
+	template <> struct EngineQualityIndex<EngineQuality::Shadow2DResolution> : std::integral_constant<std::size_t, 0> {};
+	template <> struct EngineQualityIndex<EngineQuality::ShadowCubeResolution> : std::integral_constant<std::size_t, 1> {};
+	template <> struct EngineQualityIndex<EngineQuality::MainFBHighPrecision> : std::integral_constant<std::size_t, 2> {};
 
 public:
 
@@ -40,7 +40,7 @@ public:
 
 	QualitySettings(const QualitySettings& gs)
 		: activeLevel(gs.activeLevel)
-		, engineSettings(gs.engineSettings)
+		, engineQualities(gs.engineQualities)
 	{
 	}
 
@@ -67,37 +67,37 @@ public:
 		return QualityLevels;
 	}
 
-	template <EngineSetting engineSetting>
+	template <EngineQuality engineQuality>
 	constexpr auto get()
 	{
-		return getArray<engineSetting>()[activeLevel];
+		return getArray<engineQuality>()[activeLevel];
 	}
 
-	template <EngineSetting engineSetting, unsigned int QualityLevel>
+	template <EngineQuality engineQuality, unsigned int QualityLevel>
 	constexpr auto get()
 	{
 		static_assert(QualityLevel < QualityLevels, "Quality Level out of bounds");
-		return getArray<engineSetting>()[QualityLevel];
+		return getArray<engineQuality>()[QualityLevel];
 	}
 
-	template <EngineSetting engineSetting, unsigned int QualityLevel, typename Type>
+	template <EngineQuality engineQuality, unsigned int QualityLevel, typename Type>
 	void set(Type value)
 	{
 		static_assert(QualityLevel < QualityLevels, "Quality Level out of bounds");
-		getArray<engineSetting>()[QualityLevel] = value;
+		getArray<engineQuality>()[QualityLevel] = value;
 	}
 
-	template <EngineSetting engineSetting, typename Type>
+	template <EngineQuality engineQuality, typename Type>
 	void set(const std::array<Type, QualityLevels>& values)
 	{
-		getArray<engineSetting>() = values;
+		getArray<engineQuality>() = values;
 	}
 
 private:
-	template <EngineSetting engineSetting>
+	template <EngineQuality engineQuality>
 	constexpr auto& getArray()
 	{
-		return std::get<EngineSettingIndex<engineSetting>::value>(engineSettings);
+		return std::get<EngineQualityIndex<engineQuality>::value>(engineQualities);
 	}
 };
 
