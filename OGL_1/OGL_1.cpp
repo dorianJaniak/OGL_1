@@ -235,7 +235,7 @@ void basicSetupQualitySettings(dj::QualitySettings<4u>& quality)
 	quality.set<dj::EngineQuality::Shadow2DResolution>(std::array{ 2048u, 1024u, 512u, 256u });
 	quality.set<dj::EngineQuality::ShadowCubeResolution>(std::array{ 1024u, 1024u, 512u, 256u });
 	quality.set<dj::EngineQuality::MainFBHighPrecision>(std::array{ true, true, true, false });
-	quality.setQualityLevel(0u);
+	quality.setActiveLevel(0u);
 }
 
 int main()
@@ -302,7 +302,7 @@ int main()
 	fboTexture->setFiltering(GL_NEAREST, GL_NEAREST);
 	fboTexture->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 	fboTexture->setSize(mw.getWidth(), mw.getHeight());
-	fboTexture->transferData2D(quality.get<dj::EngineQuality::MainFBHighPrecision>() ? GL_RGB16F : GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, nullptr, false);
+	fboTexture->transferData2D(quality.getActive<dj::EngineQuality::MainFBHighPrecision>() ? GL_RGB16F : GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, nullptr, false);
 	
 	fbo->assignTextureAttachment(fboTexture, GL_COLOR_ATTACHMENT0);
 	fbo->genRenderbufferAttachment(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);

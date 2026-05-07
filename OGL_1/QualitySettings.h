@@ -27,36 +27,14 @@ class QualitySettings
 	TupleType engineQualities;
 	constexpr static size_t engineQualitiesCount = std::tuple_size<TupleType>::value;
 
-	// Mapping of the names of Engine Quality Settings (it is needed for runtime mapping)
-	constexpr static std::array<EngineQuality, engineQualitiesCount> namesMapping = {
-		EngineQuality::Shadow2DResolution,
-		EngineQuality::ShadowCubeResolution,
-		EngineQuality::MainFBHighPrecision
-	};
-
 	// Structure for compile-time indexing (by EngineQuality)
 	template <EngineQuality engineQuality>
 	struct EngineQualityIndex;
 
 	// EngineQuality to engineQualities mapping
-	template <> struct EngineQualityIndex<namesMapping[0]> : std::integral_constant<std::size_t, 0> {};
-	template <> struct EngineQualityIndex<namesMapping[1]> : std::integral_constant<std::size_t, 1> {};
-	template <> struct EngineQualityIndex<namesMapping[2]> : std::integral_constant<std::size_t, 2> {};
-
-	// Needed for runtime mapping
-	template <EngineQuality engineQuality>
-	consteval static auto getIndex()
-	{
-		for (size_t i = 0; i < engineQualitiesCount; ++i)
-		{
-			if (namesMapping[i] == engineQuality)
-			{
-				return i;
-			}
-		}
-
-		return static_cast<size_t>(0);
-	}
+	template <> struct EngineQualityIndex<EngineQuality::Shadow2DResolution> : std::integral_constant<std::size_t, 0> {};
+	template <> struct EngineQualityIndex<EngineQuality::ShadowCubeResolution> : std::integral_constant<std::size_t, 1> {};
+	template <> struct EngineQualityIndex<EngineQuality::MainFBHighPrecision> : std::integral_constant<std::size_t, 2> {};
 
 public:
 
@@ -73,7 +51,7 @@ public:
 
 	QualitySettings(QualitySettings&&) = delete;
 
-	bool setQualityLevel(unsigned int level)
+	bool setActiveLevel(unsigned int level)
 	{
 		if (level < QualityLevels)
 		{
@@ -84,46 +62,37 @@ public:
 		return false;
 	}
 
-	unsigned int getQualityLevel() const
+	unsigned int getActiveLevel() const
 	{
 		return activeLevel;
 	}
 
-	constexpr unsigned int getQualityLevels() const
+	constexpr unsigned int getLevelsCount() const
 	{
 		return QualityLevels;
 	}
 
 	template <EngineQuality engineQuality>
-	constexpr auto& get() const
+	constexpr auto getActive()
 	{
 		return getArray<engineQuality>()[activeLevel];
 	}
 
 	template <EngineQuality engineQuality, unsigned int QualityLevel>
-	constexpr auto& get() const
+	constexpr auto get() const
 	{
 		static_assert(QualityLevel < QualityLevels, "Quality Level out of bounds");
 		return getArray<engineQuality>()[QualityLevel];
 	}
 
-	template <typename Type>
-	std::optional<Type> get(EngineQuality engineQuality, unsigned int index)
+	template <EngineQuality engineQuality>
+	constexpr const auto& get()
 	{
-		if (index < QualityLevels)
-		{
-			for (size_t i = 0; i < engineQualitiesCount; ++i)
-			{
-				if (engineQuality == namesMapping[i])
-				{
-					return engineQualities
-				}
-			}
-		}
+		return getArray<engineQuality>();
 	}
 
 	template <EngineQuality engineQuality, typename Type>
-	bool set(Type value, unsigned int qualityLevel)
+	bool set(unsigned int qualityLevel, Type value)
 	{
 		if (qualityLevel < QualityLevels)
 		{
