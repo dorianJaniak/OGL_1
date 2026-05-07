@@ -1,6 +1,5 @@
 #include "RenderShadedWorldNode.h"
 #include "../Program.h"
-#include "../ShadowFramebuffer.h"
 #include "../EngineKeywords.h"
 #include "../Light.h"
 #include "../Texture.h"

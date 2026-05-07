@@ -9,11 +9,12 @@ Perspective::Perspective() noexcept
 	, fovDeg(45.0f)
 	, near(0.1f)
 	, far(100.0f)
+	, aspectRatio(1.0f)
 	, matrix(1.0f)
 {
 }
 
-void Perspective::set(float fovDeg, float nearPlane, float farPlane, float aspectRatio)
+void Perspective::setPerspective(float fovDeg, float aspectRatio, float nearPlane, float farPlane)
 {
 	setFOV(fovDeg);
 	setPlanes(nearPlane, farPlane);
@@ -22,24 +23,24 @@ void Perspective::set(float fovDeg, float nearPlane, float farPlane, float aspec
 
 void Perspective::setFOV(float fovDeg)
 {
+	dirty |= (this->fovDeg != fovDeg);
 	this->fovDeg = fovDeg;
-	dirty = true;
 }
 
 void Perspective::setPlanes(float nearPlane, float farPlane)
 {
+	dirty |= (near != nearPlane || far != farPlane);
 	near = nearPlane;
 	far = farPlane;
-	dirty = true;
 }
 
 void Perspective::setAspectRatio(float ratio)
 {
+	dirty |= (aspectRatio != ratio);
 	aspectRatio = ratio;
-	dirty = true;
 }
 
-const glm::mat4& Perspective::getMatrix()
+const glm::mat4& Perspective::getPerspectiveMatrix()
 {
 	if (dirty)
 	{

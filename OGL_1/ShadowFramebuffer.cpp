@@ -22,7 +22,7 @@ void ShadowFramebuffer::configureCamera(const Camera& cam, float fovIncreseDeg)
 {
 	// copy all data from cam to this camera
 	Camera::Camera(cam);
-	setFov(cam.getFov() + fovIncreseDeg);
+	setFOV(cam.getFOV() + fovIncreseDeg);
 
 	// Shadows are computed only in 1:1 proportion
 	setAspectRatio(1.0f);

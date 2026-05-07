@@ -3,30 +3,19 @@
 using namespace dj;
 
 Camera::Camera()
-	: dirtyView(true)
-	, dirtyPerspective(true)
+	: Perspective()
+	, dirtyView(true)
 	, position(0.0f, 0.0f, 0.0f)
 	, rotation(0.0f, 0.0f, 0.0f)
 	, matrix(1.0f)
-	, perspectiveMatrix(1.0f)
-	, near(0.1f)
-	, far(100.0f)
-	, fovDeg(30.0f)
-	, aspectRatio(1.0f)
 {
 }
 
 Camera::Camera(const Camera& cam)
 	: dirtyView(cam.dirtyView)
-	, dirtyPerspective(cam.dirtyPerspective)
 	, position(cam.position)
 	, rotation(cam.rotation)
 	, matrix(cam.matrix)
-	, perspectiveMatrix(cam.perspectiveMatrix)
-	, near(cam.near)
-	, far(cam.far)
-	, fovDeg(cam.fovDeg)
-	, aspectRatio(cam.aspectRatio)
 {
 }
 
@@ -35,12 +24,6 @@ void Camera::updateView()
 	updateRotationMatrix();
 	matrix = glm::translate(rotationMatrix, -position);
 	dirtyView = false;
-}
-
-void Camera::updatePerspective()
-{
-	perspectiveMatrix = glm::perspective(glm::radians(fovDeg), aspectRatio, near, far);
-	dirtyPerspective = false;
 }
 
 void Camera::setPosition(const glm::vec3& pos)
@@ -53,34 +36,6 @@ void Camera::setRotation(const glm::vec3& rot)
 {
 	rotation = rot;
 	dirtyView = true;
-}
-
-void Camera::setPerspective(float fovDeg, float aspectRatio, float near, float far)
-{
-	this->fovDeg = fovDeg;
-	this->aspectRatio = aspectRatio;
-	this->near = near;
-	this->far = far;
-	dirtyPerspective = true;
-}
-
-void Camera::setFov(float fovDeg)
-{
-	dirtyPerspective = (this->fovDeg != fovDeg);
-	this->fovDeg = fovDeg;
-}
-
-void Camera::setAspectRatio(float aspectRatio)
-{
-	dirtyPerspective = (this->aspectRatio != aspectRatio);
-	this->aspectRatio = aspectRatio;
-}
-
-void Camera::setPlanes(float near, float far)
-{
-	dirtyPerspective = (this->near != near || this->far != far);
-	this->near = near;
-	this->far = far;
 }
 
 void Camera::fly(const glm::vec3& move)
@@ -116,20 +71,9 @@ glm::mat4 Camera::getViewMatrix()
 	return matrix;
 }
 
-const glm::mat4 &Camera::getPerspectiveMatrix()
-{
-	if (dirtyPerspective)
-	{
-		updatePerspective();
-		dirtyPerspective = false;
-	}
-
-	return perspectiveMatrix;
-}
-
 glm::mat4 Camera::getVPMatrix()
 {
-	return getPerspectiveMatrix() * getViewMatrix();
+	return Perspective::getPerspectiveMatrix() * getViewMatrix();
 }
 
 glm::mat4 Camera::getSkyboxMatrix()
@@ -140,21 +84,6 @@ glm::mat4 Camera::getSkyboxMatrix()
 glm::vec3 Camera::getPosition() const
 {
 	return position;
-}
-
-float Camera::getFov() const
-{
-	return fovDeg;
-}
-
-float Camera::getNear() const
-{
-	return near;
-}
-
-float Camera::getFar() const
-{
-	return far;
 }
 
 void Camera::updateRotationMatrix()

@@ -18,12 +18,12 @@ public:
 	Perspective(const Perspective&) noexcept = default;
 	Perspective(Perspective&&) noexcept = default;
 
-	void set(float fovDeg, float nearPlane, float farPlane, float aspectRatio);
+	void setPerspective(float fovDeg, float aspectRatio, float nearPlane, float farPlane);
 	void setFOV(float fovDeg);
 	void setPlanes(float nearPlane, float farPlane);
 	void setAspectRatio(float ratio);
 
-	const glm::mat4& getMatrix();
+	const glm::mat4& getPerspectiveMatrix();
 
 	float getFOV() const;
 	float getNearPlane() const;
