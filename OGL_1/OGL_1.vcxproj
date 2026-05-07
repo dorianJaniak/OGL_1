@@ -142,6 +142,7 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="ObjectTransformation.cpp" />
     <ClCompile Include="OGL_1.cpp" />
+    <ClCompile Include="Perspective.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="RenderNodes\CameraNodeProperty.cpp" />
     <ClCompile Include="RenderNodes\IRenderNode.cpp" />
@@ -164,6 +165,7 @@
     <ClInclude Include="DefinitionsGL.h" />
     <ClInclude Include="EngineKeywords.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="Perspective.h" />
     <ClInclude Include="QualitySettings.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="MainWindow.h" />
