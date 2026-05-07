@@ -164,6 +164,7 @@
     <ClInclude Include="DefinitionsGL.h" />
     <ClInclude Include="EngineKeywords.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="QualitySettings.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="Material.h" />
