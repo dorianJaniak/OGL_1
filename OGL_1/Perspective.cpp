@@ -2,8 +2,6 @@
 #include <gtc/matrix_transform.hpp>
 using namespace dj;
 
-
-
 Perspective::Perspective() noexcept
 	: dirty(true)
 	, fovDeg(45.0f)

@@ -1,4 +1,5 @@
 #pragma once
+#include "Perspective.h"
 #include <glm.hpp>
 #include <array>
 
@@ -16,21 +17,18 @@ namespace dj
 	\todo 
 	- Cube Map planes indexing (enum)
 */
-class CameraCube
+class CameraCube : private Perspective
 {
-	bool dirtyPerspective;
 	bool dirtyTransformations;
-	float near;
-	float far;
 	glm::vec3 position;
-	mutable glm::mat4 perspectiveMatrix;
 	mutable std::array<glm::mat4, 6> transformations;
 
 	const glm::mat4 defaultMat;
 
 public:
-	CameraCube();
-	CameraCube(const CameraCube& camera);
+	CameraCube() noexcept;
+	CameraCube(const CameraCube& camera) noexcept = default;
+	CameraCube(CameraCube&&) noexcept = default;
 
 	/*! \brief Set Camera position in World Space.
 
@@ -40,7 +38,6 @@ public:
 		\param[in] pos new camera position in World Space
 	*/
 	void setPosition(const glm::vec3& pos);
-	void setPerspective(float near, float far);
 	void setPlanes(float near, float far);
 
 	/*! \brief Returns Perspective matrix (i.e. Matrix converting Camera / View Space to Perspective / Screen / Clip Space)
@@ -64,7 +61,6 @@ public:
 
 private:
 	void update();
-	void updatePerspective();
 	void updateTransformations();
 };
 

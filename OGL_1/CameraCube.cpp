@@ -2,28 +2,16 @@
 #include <gtc/matrix_transform.hpp>
 using namespace dj;
 
-CameraCube::CameraCube()
-	: dirtyPerspective(true)
+CameraCube::CameraCube() noexcept
+	: Perspective()
 	, dirtyTransformations(true)
-	, near(0.1f)
-	, far(25.0f)
 	, position(0.0f, 0.0f, 0.0f)
-	, perspectiveMatrix(1.0f)
 	, transformations({1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f })
 	, defaultMat(1.0f)
 {
-}
-
-CameraCube::CameraCube(const CameraCube& camera)
-	: dirtyPerspective(camera.dirtyPerspective)
-	, dirtyTransformations(camera.dirtyTransformations)
-	, near(camera.near)
-	, far(camera.far)
-	, position(camera.position)
-	, perspectiveMatrix(camera.perspectiveMatrix)
-	, transformations(camera.transformations)
-	, defaultMat(1.0f)
-{
+	Perspective::setAspectRatio(1.0f);
+	Perspective::setFOV(90.0f);
+	Perspective::setPlanes(0.1f, 25.0f);
 }
 
 // Set position in world space
@@ -35,27 +23,14 @@ void CameraCube::setPosition(const glm::vec3& pos)
 	position = pos;
 }
 
-void CameraCube::setPerspective(float near, float far)
-{
-	setPlanes(near, far);
-}
-
 void CameraCube::setPlanes(float near, float far)
 {
-	dirtyPerspective = true;
-	this->near = near;
-	this->far = far;
+	Perspective::setPlanes(near, far);
 }
 
 const glm::mat4& CameraCube::getPerspectiveMatrix()
 {
-	if (dirtyPerspective)
-	{
-		updatePerspective();
-		dirtyPerspective = false;
-	}
-
-	return perspectiveMatrix;
+	return Perspective::getPerspectiveMatrix();
 }
 
 const glm::mat4& CameraCube::getVPMatrix(unsigned int side)
@@ -78,12 +53,12 @@ const std::array<glm::mat4, 6>& CameraCube::getVPMatrices()
 
 float CameraCube::getNear() const
 {
-	return near;
+	return Perspective::getNearPlane();
 }
 
 float CameraCube::getFar() const
 {
-	return far;
+	return Perspective::getFarPlane();
 }
 
 const glm::vec3& CameraCube::getPosition() const
@@ -93,22 +68,13 @@ const glm::vec3& CameraCube::getPosition() const
 
 void CameraCube::update()
 {
-	if (dirtyPerspective)
-	{
-		updatePerspective();
-		dirtyPerspective = false;
-	}
+	Perspective::getPerspectiveMatrix();
 
 	if (dirtyTransformations)
 	{
 		updateTransformations();
 		dirtyTransformations = false;
 	}
-}
-
-void CameraCube::updatePerspective()
-{
-	perspectiveMatrix = glm::perspective(glm::radians(90.0f), 1.0f, near, far);
 }
 
 void CameraCube::updateTransformations()
@@ -133,6 +99,6 @@ void CameraCube::updateTransformations()
 
 	for (unsigned int i = 0; i < 6u; ++i)
 	{
-		transformations[i] = perspectiveMatrix * glm::lookAt(position, position + dirPoints[i], dirTop[i]);
+		transformations[i] = Perspective::getPerspectiveMatrix() * glm::lookAt(position, position + dirPoints[i], dirTop[i]);
 	}
 }

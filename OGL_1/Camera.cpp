@@ -78,7 +78,7 @@ glm::mat4 Camera::getVPMatrix()
 
 glm::mat4 Camera::getSkyboxMatrix()
 {
-	return getPerspectiveMatrix() * rotationMatrix;
+	return Perspective::getPerspectiveMatrix() * rotationMatrix;
 }
 
 glm::vec3 Camera::getPosition() const
