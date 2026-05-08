@@ -520,7 +520,7 @@ int main()
 
 			shadow.fbo->bind();
 			dj::CameraCube cameraCube;
-			cameraCube.setPerspective(1.0f, 25.0f);
+			cameraCube.setPlanes(1.0f, 25.0f);
 			cameraCube.setPosition(shadow.light->getPosition());
 
 			glUniform1f(activeProgram->getUniformLocation("u_far"), cameraCube.getFar());

@@ -1,4 +1,5 @@
 #pragma once
+#include "Perspective.h"
 #include <glm.hpp>
 
 namespace dj {
@@ -6,19 +7,13 @@ namespace dj {
 /*! \class Camera
 	\brief Keeps all 3D Camera's data: Transformation, field of view, aspect ratio.
 	*/
-class Camera {
+class Camera : public Perspective {
 	bool dirtyView;
-	bool dirtyPerspective;
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::mat4 rotationMatrix;
 	glm::mat4 matrix;
-	glm::mat4 perspectiveMatrix;
 
-	float near;
-	float far;
-	float fovDeg;
-	float aspectRatio;
 public:
 	Camera();
 	Camera(const Camera& camera);
@@ -40,10 +35,6 @@ public:
 		\param[in] rot rotations vector expressed in degrees (pitch, yaw, roll)
 	*/
 	void setRotation(const glm::vec3& rot);
-	void setPerspective(float fovDeg, float aspectRatio, float near, float far);
-	void setFov(float fovDeg);
-	void setAspectRatio(float aspectRatio);
-	void setPlanes(float near, float far);
 
 	/*! \brief Moves camera along Z-axis in its coordinate system.
 		\param[in] move interval that needs to be added to Camera's position
@@ -62,10 +53,7 @@ public:
 		\return View matrix
 	*/
 	glm::mat4 getViewMatrix();
-	/*! \brief Returns Perspective matrix (i.e. Matrix converting Camera / View Space to Perspective / Screen / Clip Space)
-		\return Perspective matrix
-	*/
-	const glm::mat4 &getPerspectiveMatrix();
+
 	/*! \brief Returns View * Perspective Matrix (i.e. Matrix converting World to Perspective / Screen / Clip Space) 
 		\return View-Perspective Matrix 
 	*/
@@ -80,12 +68,7 @@ public:
 	*/
 	glm::vec3 getPosition() const;
 
-	float getFov() const;
-	float getNear() const;
-	float getFar() const;
-
 private:
-	void updatePerspective();
 	// Updates rotation matrix (but for world rotation)
 	void updateRotationMatrix();
 };

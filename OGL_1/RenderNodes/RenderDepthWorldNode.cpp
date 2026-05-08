@@ -18,8 +18,8 @@ void RenderDepthWorldNode::uboPerFrame()
 void RenderDepthWorldNode::uniformPerProgram(ConstProgramPtr program)
 {
 	glUniformMatrix4fv(program->getUniformLocation("u_camVP"), 1, GL_FALSE, glm::value_ptr(camera->getVPMatrix()));
-	glUniform1f(program->getUniformLocation("u_near"), camera->getNear());
-	glUniform1f(program->getUniformLocation("u_far"), camera->getFar());
+	glUniform1f(program->getUniformLocation("u_near"), camera->getNearPlane());
+	glUniform1f(program->getUniformLocation("u_far"), camera->getFarPlane());
 }
 
 void RenderDepthWorldNode::uniformPerMaterial(ConstProgramPtr program, ConstMaterialPtr material)
