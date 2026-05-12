@@ -15,6 +15,7 @@ using TextureUnitID = GLuint;
 using ProgramID = GLuint;
 using ShaderID = GLuint;
 using FramebufferID = GLuint;
+using TextureGLType = GLenum;
 
 //using TexturePtr = std::shared_ptr<TextureID>;
 using TextureUnitIDPtr = std::shared_ptr<TextureUnitID>;

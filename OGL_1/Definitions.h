@@ -3,6 +3,7 @@
 #include <utility>
 #include <iostream>
 #include <memory>
+#include <array>
 
 namespace dj {
 	enum class EngineProgramID
@@ -50,6 +51,7 @@ namespace dj {
 	using FramebufferPtr = std::shared_ptr<Framebuffer>;
 	using CameraPtr = std::shared_ptr<Camera>;
 
+	using ColorRGBA = std::array<float, 4u>;
 
 	struct MeshAlignment {
 		Index indicesStart;

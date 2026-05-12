@@ -5,7 +5,6 @@
 
 namespace dj
 {
-using TextureGLType = GLenum;
 
 struct TextureTypeInfo
 {

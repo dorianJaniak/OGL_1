@@ -188,6 +188,8 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureContainer.h" />
     <ClInclude Include="TextureData.h" />
+    <ClInclude Include="TextureHandle.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TGLTFLoader.h" />
     <ClInclude Include="TimeDrivenMovement.h" />
     <ClInclude Include="UniformNames.h" />
