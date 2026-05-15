@@ -1,4 +1,5 @@
 #pragma once
+#include "Enums/TextureParameterEnums.h"
 #include <GL/glew.h>
 
 namespace dj
@@ -6,20 +7,20 @@ namespace dj
 
 struct TextureSamplingDesc
 {
-	GLenum wrapS;
-	GLenum wrapT;
-	GLenum wrapR;
-	GLenum minFilter;
-	GLenum magFilter;
+	TextureWrapping wrapS;
+	TextureWrapping wrapT;
+	TextureWrapping wrapR;
+	TextureFilteringMin minFilter;
+	TextureFilteringMag magFilter;
 
-	void setWrapping(GLenum s, GLenum t, GLenum r = GL_REPEAT)
+	void setWrapping(TextureWrapping s, TextureWrapping t, TextureWrapping r = TextureWrapping::Repeat)
 	{
 		wrapS = s;
 		wrapT = t;
 		wrapR = r;
 	}
 
-	void setFiltering(GLenum min, GLenum mag)
+	void setFiltering(TextureFilteringMin min, TextureFilteringMag mag)
 	{
 		minFilter = min;
 		magFilter = mag;
