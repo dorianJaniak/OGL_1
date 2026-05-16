@@ -1,19 +1,21 @@
 #pragma once
 #include "TextureColorEnums.h"
 #include "TextureParameterEnums.h"
+#include "GLTypes.h"
+#include <optional>
 
 namespace dj
 {
 
 // Section: toGLenum functions
 template <class T>
-inline constexpr GLenum toGLenum(T value)
+constexpr GLenum toGLenum(T value)
 {
 	return selectEnumMapping<T>[static_cast<unsigned int>(value)]);
 }
 
 template <class T>
-inline constexpr unsigned int toBitSize(T value)
+constexpr unsigned int toBitSize(T value)
 {
 	return selectBitSizeMapping[static_cast<unsigned int>(value)]);
 }
