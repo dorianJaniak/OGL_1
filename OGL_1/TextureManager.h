@@ -3,11 +3,13 @@
 #include "Utils/NonCopyableNonMovable.h"
 #include "TextureHandle.h"
 #include "TextureResource.h"
+#include "Enums/TextureParameterEnums.h"
 #include "Definitions.h"
 #include <vector>
 #include <string>
 #include <functional>
 #include <optional>
+#include <set>
 
 namespace dj
 {
@@ -32,7 +34,7 @@ class TextureManager : public TextureReferencesManager, private NonCopyable, pri
 
 	std::vector<std::string> paths;
 	std::vector<TextureResource> textures;
-	std::vector<unsigned int> freeSlots;
+	std::set<unsigned int> freeSlots;
 
 public:
 	TextureManager() noexcept = default;
@@ -52,22 +54,21 @@ public:
 
 	// Check if Texture exists / check if TextureHandle is correct
 	bool exists(const TextureHandle& handle) const;
-	bool verifyTextureDescriptor(const TextureDesc& desc) const;
+	static bool verifyTextureDescriptor(const TextureDesc& desc);
 
 	// Simplified access to TextureResources
 	bool setBorderColor(const TextureHandle& handle, const ColorRGBA& color);
-	bool setWrapping(const TextureHandle& handle, GLenum s, GLenum t, GLenum r);
-	bool setFiltering(const TextureHandle& handle, GLenum min, GLenum far);
-	std::optional<TextureGLType> getType(const TextureHandle& handle) const;
+	bool setWrapping(const TextureHandle& handle, TextureWrapping s, TextureWrapping t, TextureWrapping r);
+	bool setFiltering(const TextureHandle& handle, TextureFilteringMin min, TextureFilteringMag mag);
+	std::optional<TextureType> getType(const TextureHandle& handle) const;
 	std::optional<TextureDesc> getDescriptor(const TextureHandle& handle) const;
 	std::optional<ResolutionDesc> getResolution(const TextureHandle& handle) const;
 	std::optional<TextureSamplingDesc> getSamplingDesc(const TextureHandle& handle) const;
 
 private:
-	bool isOk(const TextureHandle& handle) const;
-	void deleteUnused();
+	unsigned int deleteUnused();
 
-	unsigned int getFirstFreeSlot() const;
+	std::optional<unsigned int> popFirstFreeSlot();
 };
 
 } // namespace dj
