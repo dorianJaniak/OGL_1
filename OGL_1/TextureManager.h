@@ -52,6 +52,7 @@ public:
 
 	// Check if Texture exists / check if TextureHandle is correct
 	bool exists(const TextureHandle& handle) const;
+	bool verifyTextureDescriptor(const TextureDesc& desc) const;
 
 	// Simplified access to TextureResources
 	bool setBorderColor(const TextureHandle& handle, const ColorRGBA& color);
@@ -65,6 +66,8 @@ public:
 private:
 	bool isOk(const TextureHandle& handle) const;
 	void deleteUnused();
+
+	unsigned int getFirstFreeSlot() const;
 };
 
 } // namespace dj

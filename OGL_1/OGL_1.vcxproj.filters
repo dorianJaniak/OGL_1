@@ -19,6 +19,18 @@
     <Filter Include="Pliki nagłówkowe\RenderNodes">
       <UniqueIdentifier>{18537608-36ef-4ee6-9bd0-c92103f0080c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Pliki nagłówkowe\Descriptors">
+      <UniqueIdentifier>{611d5495-4d42-4388-85ce-192ebb3c8edc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki nagłówkowe\Utils">
+      <UniqueIdentifier>{38e01d32-2e1b-4aba-a0b1-27a745ffb27c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki nagłówkowe\Enums">
+      <UniqueIdentifier>{f88a923f-f08e-4014-a0e5-88c8379760a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\Utils">
+      <UniqueIdentifier>{742d8a68-98ff-47e5-a4f3-7622f76e7d4f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OGL_1.cpp">
@@ -95,6 +107,24 @@
     </ClCompile>
     <ClCompile Include="MainWindow.cpp">
       <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="Perspective.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureResource.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureHandle.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureReferencesManager.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\GLWrapper.cpp">
+      <Filter>Pliki źródłowe\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -190,6 +220,63 @@
     </ClInclude>
     <ClInclude Include="QualitySettings.h">
       <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Perspective.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureHandle.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\FramebufferDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\RenderBufferAttachmentDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\ResolutionDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\TextureAttachmentDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\TextureDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\TextureFormatDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\TextureSamplingDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\NonCopyableNonMovable.h">
+      <Filter>Pliki nagłówkowe\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureResource.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureReferencesManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\TextureColorEnums.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\TextureParameterEnums.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\Utils.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\Converters.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\GLTypes.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\GLWrapper.h">
+      <Filter>Pliki nagłówkowe\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

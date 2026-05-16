@@ -1,4 +1,6 @@
 #include "TextureResource.h"
+#include "Enums/Converters.h"
+#include "Utils/GLWrapper.h"
 using namespace dj;
 
 TextureResource::TextureResource()
@@ -6,7 +8,6 @@ TextureResource::TextureResource()
 	, desc{}
 	, borderColor{0.0f, 0.0f, 0.0f, 0.0f}
 {
-	desc.glType = GL_TEXTURE_2D;
 }
 
 TextureResource::~TextureResource()
@@ -29,10 +30,21 @@ void TextureResource::unbind()
 	globalActiveID = 0u;
 }
 
-bool TextureResource::transferData2D(GLenum sourceColorFormat, GLenum sourceValueType, const void* data)
+void TextureResource::unbindAllTypes()
+{
+	static const auto& types = selectEnumMapping<TextureType>();
+	static const unsigned int size = std::size(types);
+
+	for (unsigned int i = 0; i < size; ++i)
+	{
+		glBindTexture(types[i], 0u);
+	}
+}
+
+bool TextureResource::transferData2D(ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data)
 {
 	const ResolutionDesc& res = desc.resolution;
-	if (desc.glType != GL_TEXTURE_2D || res.width == 0u || res.height == 0u)
+	if (desc.glType != TextureType::Texture2D || res.width == 0u || res.height == 0u)
 	{
 		return false;
 	}
@@ -48,7 +60,7 @@ bool TextureResource::transferData2D(GLenum sourceColorFormat, GLenum sourceValu
 		return false;
 	}
 
-	glTexImage2D(desc.glType, 0, desc.format.inGPUColorFormat, res.width, res.height, 0, sourceColorFormat, sourceValueType, data);
+	glTexImage2D(toGLenum(desc.glType), 0, desc.format.inGPUColorFormat, res.width, res.height, 0, sourceColorFormat, sourceValueType, data);
 	error = glGetError();
 	if (error != GL_NO_ERROR)
 	{
@@ -59,18 +71,18 @@ bool TextureResource::transferData2D(GLenum sourceColorFormat, GLenum sourceValu
 	//sizeInVram = texturePixelSizeEstimation(inGPUColorFormat) * width * height / 8u + 1;
 	if (desc.mipmaps)
 	{
-		glGenerateMipmap(desc.glType);
+		glGenerateMipmap(toGLenum(desc.glType));
 		//sizeInVram = static_cast<unsigned int>(static_cast<float>(sizeInVram) * 1.3333f);
 	}
 
 	return true;
 }
 
-bool TextureResource::transferCubeSide(GLenum side, GLenum sourceColorFormat, GLenum sourceValueType, const void* data)
+bool TextureResource::transferCubeSide(TextureCubeSide side, ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data)
 {
 	const ResolutionDesc& res = desc.resolution;
 
-	if (desc.glType != GL_TEXTURE_CUBE_MAP || res.width == 0u || res.width != res.height)
+	if (desc.glType != TextureType::TextureCube || res.width == 0u || res.width != res.height)
 	{
 		return false;
 	}
@@ -97,7 +109,7 @@ bool TextureResource::transferCubeSide(GLenum side, GLenum sourceColorFormat, GL
 	//sizeInVram = 6u * texturePixelSizeEstimation(inGPUColorFormat) * width * height / 8u + 1u;
 	if (desc.mipmaps)
 	{
-		glGenerateMipmap(GL_TEXTURE_2D);
+		glGenerateMipmap(toGLenum(TextureType::Texture2D));
 		//sizeInVram = static_cast<unsigned int>(static_cast<float>(sizeInVram) * 1.3333f);
 	}
 
@@ -110,7 +122,7 @@ void TextureResource::setBorderColor(const ColorRGBA& color)
 	setBorderColor();
 }
 
-void TextureResource::setWrapping(GLenum s, GLenum t, GLenum r)
+void TextureResource::setWrapping(TextureWrapping s, TextureWrapping t, TextureWrapping r)
 {
 	desc.sampling.wrapS = s;
 	desc.sampling.wrapT = t;
@@ -118,14 +130,14 @@ void TextureResource::setWrapping(GLenum s, GLenum t, GLenum r)
 	setWrapping();
 }
 
-void TextureResource::setFiltering(GLenum min, GLenum mag)
+void TextureResource::setFiltering(TextureFilteringMin min, TextureFilteringMag mag)
 {
 	desc.sampling.minFilter = min;
 	desc.sampling.magFilter = mag;
 	setFiltering();
 }
 
-TextureGLType TextureResource::getType() const
+TextureType TextureResource::getType() const
 {
 	return desc.glType;
 }
@@ -177,20 +189,22 @@ void TextureResource::clear()
 void TextureResource::setBorderColor()
 {
 	bind();
-	glTexParameterfv(desc.glType, GL_TEXTURE_BORDER_COLOR, borderColor.data());
+	glTexParameterfv(toGLenum(desc.glType), GL_TEXTURE_BORDER_COLOR, borderColor.data());
 }
 
 void TextureResource::setWrapping()
 {
+	GLenum target = toGLenum(desc.glType);
 	bind();
-	glTexParameteri(desc.glType, GL_TEXTURE_WRAP_S, desc.sampling.wrapS);
-	glTexParameteri(desc.glType, GL_TEXTURE_WRAP_T, desc.sampling.wrapT);
-	glTexParameteri(desc.glType, GL_TEXTURE_WRAP_R, desc.sampling.wrapR);
+	glTexParameteri(target, GL_TEXTURE_WRAP_S, toGLenum(desc.sampling.wrapS));
+	glTexParameteri(target, GL_TEXTURE_WRAP_T, toGLenum(desc.sampling.wrapT));
+	glTexParameteri(target, GL_TEXTURE_WRAP_R, toGLenum(desc.sampling.wrapR));
 }
 
 void TextureResource::setFiltering()
 {
+	GLenum target = toGLenum(desc.glType);
 	bind();
-	glTexParameteri(desc.glType, GL_TEXTURE_MIN_FILTER, desc.sampling.minFilter);
-	glTexParameteri(desc.glType, GL_TEXTURE_MAG_FILTER, desc.sampling.magFilter);
+	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, toGLenum(desc.sampling.minFilter));
+	glTexParameteri(target, GL_TEXTURE_MAG_FILTER, toGLenum(desc.sampling.magFilter));
 }

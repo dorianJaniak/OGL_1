@@ -2,7 +2,6 @@
 #include "Utils/NonCopyableNonMovable.h"
 #include "Descriptors/TextureDesc.h"
 #include "Definitions.h"
-#include <GL/glew.h>
 
 namespace dj
 {
@@ -31,18 +30,19 @@ public:
 
 	void bind();
 	void unbind();
+	static void unbindAllTypes();
 
 	// Image data setters
-	bool transferData2D(GLenum sourceColorFormat, GLenum sourceValueType, const void* data);
-	bool transferCubeSide(GLenum side, GLenum sourceColorFormat, GLenum sourceValueType, const void* data);
+	bool transferData2D(ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data);
+	bool transferCubeSide(TextureCubeSide side, ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data);
 
 	// Format / sampling setters - automatically binds texture and updates in OpenGL
 	void setBorderColor(const ColorRGBA& color);
-	void setWrapping(GLenum s, GLenum t, GLenum r);
-	void setFiltering(GLenum min, GLenum mag);
+	void setWrapping(TextureWrapping s, TextureWrapping t, TextureWrapping r);
+	void setFiltering(TextureFilteringMin min, TextureFilteringMag mag);
 
 	// Getters
-	TextureGLType getType() const;
+	TextureType getType() const;
 	const TextureDesc& getDescriptor() const;
 	const ResolutionDesc& getResolution() const;
 	const TextureSamplingDesc& getSamplingDesc() const;
