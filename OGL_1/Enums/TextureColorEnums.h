@@ -1,8 +1,6 @@
 #pragma once
 #include "Utils.h"
 #include <GL/glew.h>
-#include <tuple>
-#include <optional>
 
 namespace dj
 {

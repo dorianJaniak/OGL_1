@@ -1,6 +1,5 @@
 #pragma once
 #include "Enums/TextureParameterEnums.h"
-#include <GL/glew.h>
 
 namespace dj
 {

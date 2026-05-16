@@ -2,7 +2,8 @@
 #include "ResolutionDesc.h"
 #include "TextureSamplingDesc.h"
 #include "TextureFormatDesc.h"
-#include "../DefinitionsGL.h"
+#include "Enums/GLTypes.h"
+#include "DefinitionsGL.h"
 
 namespace dj
 {
@@ -15,7 +16,7 @@ namespace dj
 struct TextureDesc
 {
 	ResolutionDesc resolution;
-	TextureGLType glType;			// GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP
+	TextureType glType;			// GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP
 	TextureSamplingDesc sampling;
 	TextureFormatDesc format;
 	bool mipmaps;
