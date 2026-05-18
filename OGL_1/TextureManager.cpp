@@ -1,4 +1,6 @@
 #include "TextureManager.h"
+#include "TextureData.h"
+#include "Enums/Converters.h"
 using namespace dj;
 
 std::optional<TextureHandle> TextureManager::createEmptyTexture(const TextureDesc& desc)
@@ -7,14 +9,140 @@ std::optional<TextureHandle> TextureManager::createEmptyTexture(const TextureDes
 	tex.recreate(desc);
 }
 
-std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureDesc& desc, const char* path, bool flip)
+std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps, bool flip)
 {
+	TextureData data(path, flip);
 
+	if (!data.isOk())
+	{
+		// std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;;
+		return std::nullopt;
+	}
+
+	if (data.getWidth() == 0u || data.getHeight() == 0u)
+	{
+		// std::cerr << dj::Log::failPrefix() << "Wrong resolution of loaded texture: " << path << std::endl;
+		return std::nullopt;
+	}
+
+	std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
+	if (!sourceColorFormat)
+	{
+		// std::cerr << dj::Log::failPrefix() << "Unknown texture color format: " << path << std::endl;
+		return std::nullopt;
+	}
+
+	TextureDesc desc;
+	desc.glType = TextureType::Texture2D;
+	desc.resolution.width = data.getWidth();
+	desc.resolution.height = data.getHeight();
+	desc.format = *sourceColorFormat;
+	desc.sampling = sampling;
+	desc.mipmaps = generateMipMaps;
+
+	TextureResource res;
+	res.bind();
+	res.recreate(desc);
+	res.transferData2D(desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
+
+	if (desc.mipmaps)
+	{
+		glGenerateMipmap(toGLenum(desc.glType));
+	}
+
+	addTexture(std::move(res), desc, path);
 }
 
-std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const TextureDesc& desc, const char* path, bool flip)
+std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const char* pathSuffixes[6], bool generateMipMaps, bool flip)
 {
+	constexpr unsigned int sidesCount = 6u;
 
+	auto genSidePath = [pathPrefix, pathSuffixes](unsigned int side) {
+		return (std::string(pathPrefix) + std::string(pathSuffixes[side]));
+	};
+
+	// Load first data to get info
+	TextureData data(genSidePath(0u).c_str(), flip);
+
+	if (!data.isOk())
+	{
+		// std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;;
+		return std::nullopt;
+	}
+
+	if (data.getWidth() == 0u || data.getHeight() == 0u)
+	{
+		// std::cerr << dj::Log::failPrefix() << "Wrong resolution of loaded texture: " << path << std::endl;
+		return std::nullopt;
+	}
+
+	if (data.getWidth() != data.getHeight())
+	{
+		// std::cerr << dj::Log::failPrefix() << "Resolution of cube map side is incorrect. Width should equal height. Textures: " << pathPrefix << std::endl;
+		return std::nullopt;
+	}
+
+	std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
+	if (!sourceColorFormat)
+	{
+		// std::cerr << dj::Log::failPrefix() << "Unknown texture color format: " << path << std::endl;
+		return std::nullopt;
+	}
+
+	TextureDesc desc;
+	desc.glType = TextureType::TextureCube;
+	desc.resolution.width = data.getWidth();
+	desc.resolution.height = data.getHeight();
+	desc.format = *sourceColorFormat;
+	desc.sampling = sampling;
+	desc.mipmaps = generateMipMaps;
+
+	TextureResource res;
+	res.bind();
+	res.recreate(desc);
+
+	std::optional<TextureCubeSide> sideEnum = toEnum<TextureCubeSide>(0u);
+	assert(sideEnum, "Could not map index to TextureCubeSide");
+
+	res.transferCubeSide(*sideEnum, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
+
+	// Load another sides
+	for (unsigned int i = 1u; i < sidesCount; ++i)
+	{
+		TextureData data(genSidePath(i).c_str(), flip);
+
+		if (!data.isOk())
+		{
+			// std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;;
+			return std::nullopt;
+		}
+
+		if (data.getWidth() != desc.resolution.width || data.getHeight() != desc.resolution.height)
+		{
+			// std::cerr << dj::Log::failPrefix() << "Side: " << i << " has different resolution than side 0. Could not load texture: " << pathPrefix << std::endl;;
+			return std::nullopt;
+		}
+
+		std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
+		if (!sourceColorFormat)
+		{
+			// std::cerr << dj::Log::failPrefix() << "Unknown texture color format: " << pathPrefix << std::endl;
+			return std::nullopt;
+		}
+
+		if (*sourceColorFormat != desc.format)
+		{
+			// std::cerr << dj::Log::failPrefix() << "Side: " << i << " has different color format than side 0. Could not load texture: " << pathPrefix << std::endl;
+			return std::nullopt;
+		}
+
+		std::optional<TextureCubeSide> sideEnum = toEnum<TextureCubeSide>(i);
+		assert(sideEnum, "Could not map index to TextureCubeSide");
+
+		res.transferCubeSide(*sideEnum, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
+	}
+
+	addTexture(std::move(res), desc, pathPrefix);
 }
 
 bool TextureManager::check(const TextureHandle& handle, std::function<bool(const TextureResource&)> fun) const
@@ -160,12 +288,58 @@ unsigned int TextureManager::deleteUnused()
 	return count;
 }
 
+std::optional<TextureHandle> TextureManager::addTexture(TextureResource&& res, const TextureDesc& desc, const char* path)
+{
+	std::optional<unsigned int> freeSlot = popFirstFreeSlot();
+	unsigned int index;
+
+	if (freeSlot)
+	{
+		index = *freeSlot;
+		textures[index] = std::move(res);
+		paths[index] = path;
+		generations[index] += 1u;
+		// referencesCount[*freeSlot] = 0u;			// it should always equal to 0
+	}
+	else
+	{
+		try
+		{
+			index = textures.size();
+			textures.push_back(std::move(res));
+			paths.push_back(path);
+			generations.push_back(1u);
+			referencesCount.push_back(0u);
+		}
+		catch (const std::exception& e)
+		{
+			// std::cerr << dj::Log::failPrefix() << "Could not add new texture to vectors - exception: " << e.what() << std::endl;
+			return std::nullopt;
+		}
+	}
+
+	return TextureHandle(this, index, generations[index]);
+}
+
 std::optional<unsigned int> TextureManager::popFirstFreeSlot()
 {
 	if (!freeSlots.empty())
 	{
 		unsigned int freeSlot = (*freeSlots.begin());
 		freeSlots.erase(freeSlots.begin());
+	}
+
+	return std::nullopt;
+}
+
+std::optional<TextureFormatDesc> TextureManager::channelsCountToColorFormat(unsigned int count) const
+{
+	switch (count)
+	{
+	case 1u: return { ColorFormatInSource::R, ColorFormatInDevice::R, PixelDataTypeInSource::UnsignedByte };
+	case 2u: return { ColorFormatInSource::RG, ColorFormatInDevice::RG, PixelDataTypeInSource::UnsignedByte };
+	case 3u: return { ColorFormatInSource::RGB, ColorFormatInDevice::RGB, PixelDataTypeInSource::UnsignedByte };
+	case 4u: return { ColorFormatInSource::RGBA, ColorFormatInDevice::RGBA, PixelDataTypeInSource::UnsignedByte };
 	}
 
 	return std::nullopt;

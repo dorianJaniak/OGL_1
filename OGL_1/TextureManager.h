@@ -41,8 +41,8 @@ public:
 	~TextureManager() noexcept = default;
 
 	std::optional<TextureHandle> createEmptyTexture(const TextureDesc& desc);
-	std::optional<TextureHandle> create2DFromFile(const TextureDesc& desc, const char* path, bool flip = false);
-	std::optional<TextureHandle> createCubeMapFromFile(const TextureDesc& desc, const char* path, bool flip = false);
+	std::optional<TextureHandle> create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps = false, bool flip = false);
+	std::optional<TextureHandle> createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const char* pathSuffixes[6], bool generateMipMaps = false, bool flip = false);
 
 	// Operate on Texture
 	bool check(const TextureHandle& handle, std::function<bool(const TextureResource&)> fun) const;
@@ -68,7 +68,10 @@ public:
 private:
 	unsigned int deleteUnused();
 
+	std::optional<TextureHandle> addTexture(TextureResource&& res, const TextureDesc& desc, const char* path);
 	std::optional<unsigned int> popFirstFreeSlot();
+
+	std::optional<TextureFormatDesc> channelsCountToColorFormat(unsigned int count) const;
 };
 
 } // namespace dj

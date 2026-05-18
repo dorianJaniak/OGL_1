@@ -24,6 +24,8 @@ struct TextureSamplingDesc
 		minFilter = min;
 		magFilter = mag;
 	}
+
+	bool operator==(const TextureSamplingDesc&) const = default;
 };
 
 } // namespace dj

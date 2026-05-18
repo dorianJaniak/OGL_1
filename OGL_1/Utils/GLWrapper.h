@@ -7,7 +7,7 @@ namespace dj
 {
 
 /*!
-* \todo Consider adding more functions, but awareness that GLenum target argument for glTexImage2D, glBindTexture and glGenerateMipmaps is different in each case
+* \todo Consider adding more functions, with awarness that GLenum target argument for glTexImage2D, glBindTexture and glGenerateMipmaps is different in each case
 */
 
 void glBindTexture(TextureType type, GLuint id);

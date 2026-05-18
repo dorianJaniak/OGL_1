@@ -3,11 +3,28 @@
 #include "Utils/GLWrapper.h"
 using namespace dj;
 
-TextureResource::TextureResource()
+TextureResource::TextureResource() noexcept
 	: id(0u)
 	, desc{}
 	, borderColor{0.0f, 0.0f, 0.0f, 0.0f}
 {
+}
+
+TextureResource::TextureResource(TextureResource&& res) noexcept
+	: id(res.id)
+	, desc(res.desc)
+	, borderColor(res.borderColor)
+{
+	res.id = 0u;
+}
+
+TextureResource& TextureResource::operator=(TextureResource&& res) noexcept
+{
+	id = res.id;
+	desc = res.desc;
+	borderColor = res.borderColor;
+
+	res.id = 0u;
 }
 
 TextureResource::~TextureResource()

@@ -23,9 +23,9 @@ class TextureResource : private NonCopyable
 	ColorRGBA borderColor;
 public:
 
-	TextureResource();
-	TextureResource(TextureResource&&) = default;
-	TextureResource& operator=(TextureResource&&) = default;
+	TextureResource() noexcept;
+	TextureResource(TextureResource&&) noexcept;
+	TextureResource& operator=(TextureResource&&) noexcept;
 	~TextureResource();
 
 	void bind();

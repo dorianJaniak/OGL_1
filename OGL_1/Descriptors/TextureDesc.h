@@ -20,6 +20,8 @@ struct TextureDesc
 	TextureSamplingDesc sampling;
 	TextureFormatDesc format;
 	bool mipmaps;
+
+	bool operator==(const TextureDesc&) const = default;
 };
 
 //! \todo temporary functions: getTextureSamplingDescDefaultsFor2D() and getTextureSamplingDescDefaultsForCube()
