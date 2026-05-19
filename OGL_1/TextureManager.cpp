@@ -176,7 +176,8 @@ bool TextureManager::execute(const TextureHandle& handle, std::function<bool(Tex
 
 unsigned int TextureManager::getCount() const
 {
-	return static_cast<unsigned int>(textures.size());
+	assert(freeSlots.size() <= textures.size() && "Incorrect implementation - freeSlots is bigger than textures vector");
+	return static_cast<unsigned int>(textures.size() - freeSlots.size());
 }
 
 unsigned int TextureManager::getSizeInVRAM() const
@@ -278,6 +279,75 @@ std::optional<TextureSamplingDesc> TextureManager::getSamplingDesc(const Texture
 	return std::nullopt;
 }
 
+unsigned int TextureManager::getReferencesCount(const TextureHandle& handle) const
+{
+	if (exists(handle))
+	{
+		return referencesCount[handle.getIndex()];
+	}
+
+	return 0u;
+}
+
+unsigned int TextureManager::forceDeleteUnused()
+{
+	return deleteUnused();
+}
+
+bool TextureManager::verifyConsistency() const
+{
+	// Verify if vectors have the same size
+	bool sameSizeOk = (textures.size() == paths.size()) &&
+		(textures.size() == referencesCount.size()) &&
+		(textures.size() == generations.size());
+
+	// Verify if freeSlots vector is not bigger than other vectors
+	bool freeSlotsSizeOk = freeSlots.size() <= textures.size();
+
+	// Verify if freeSlots points to existing indices
+	bool freeSlotsOk = true;
+	bool freeSlotsPointOk = true;
+	for (unsigned int freeSlot : freeSlots)
+	{
+		bool indexOk = (freeSlot < textures.size());
+		freeSlotsOk &= indexOk;
+		
+		// Verify if freeSlots points to cells in which textures truly does not exist
+		if (indexOk)
+		{
+			freeSlotsPointOk &= (referencesCount[freeSlot] == 0u && textures[freeSlot].id == 0u);
+		}
+	}
+
+	// Verify if all textures exists except for freeSlots
+	unsigned int texturesCount = 0u;
+	for (unsigned int i = 0u; i < textures.size(); ++i)
+	{
+		if (textures[i].id != 0u)
+		{
+			++texturesCount;
+		}
+	}
+	bool texturesOk = (texturesCount + freeSlots.size() == textures.size());
+
+	return (sameSizeOk && freeSlotsSizeOk && freeSlotsOk && freeSlotsPointOk && texturesOk);
+}
+
+unsigned int TextureManager::getCellsCount() const
+{
+	return static_cast<unsigned int>(textures.size());
+}
+
+const std::vector<unsigned int>& TextureManager::getReferencesCountVector() const
+{
+	return referencesCount;
+}
+
+const std::vector<unsigned int>& TextureManager::getGenerationsVector() const
+{
+	return generations;
+}
+
 unsigned int TextureManager::deleteUnused()
 {
 	unsigned int count = 0u;
@@ -336,6 +406,8 @@ std::optional<unsigned int> TextureManager::popFirstFreeSlot()
 	{
 		unsigned int freeSlot = (*freeSlots.begin());
 		freeSlots.erase(freeSlots.begin());
+
+		return freeSlot;
 	}
 
 	return std::nullopt;

@@ -65,6 +65,16 @@ public:
 	std::optional<ResolutionDesc> getResolution(const TextureHandle& handle) const;
 	std::optional<TextureSamplingDesc> getSamplingDesc(const TextureHandle& handle) const;
 
+	// Management methods
+	unsigned int getReferencesCount(const TextureHandle& handle) const;
+	unsigned int forceDeleteUnused();
+
+	// Debugging methods
+	bool verifyConsistency() const;
+	unsigned int getCellsCount() const;
+	const std::vector<unsigned int>& getReferencesCountVector() const;
+	const std::vector<unsigned int>& getGenerationsVector() const;
+
 private:
 	unsigned int deleteUnused();
 

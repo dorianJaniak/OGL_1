@@ -10,8 +10,8 @@ class TextureManager;
 
 namespace dj
 {
-/*! \todo
-		- In future test if TextureDesc should be split into other vector (for optimization)
+/*! \todo In future test if TextureDesc should be split into other vector (for optimization)
+	\todo Consider if it is not worth to move all fields to another class that will be inherited privately (in order to prevent friend from using it)
 */
 class TextureResource : private NonCopyable
 {
