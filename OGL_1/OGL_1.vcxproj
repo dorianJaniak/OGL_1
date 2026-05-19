@@ -133,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CameraCube.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="Utils\GLWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraCube.h" />
     <ClInclude Include="Definitions.h" />

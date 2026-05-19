@@ -42,6 +42,8 @@
 #include "Predefinitions\PredefinedShaders.h"
 #include "Predefinitions\PredefinedMeshes.h"
 
+#include "Basic3DEnviro/Basic3DEnviro.h"
+
 #include <array>
 
 // IN FUTURE: Approach AZDO
@@ -246,6 +248,8 @@ int main()
 
 	const GlobalSettings &gs = GlobalSettings::getInstance();
 	dj::TimeDrivenMovement tdm;
+
+	dj::TextureManager texMgr;
 
 	dj::TextureContainer tc;							// Using only Purpose::File (textures and skybox)
 	std::vector<dj::ObjectPtr> objects;
@@ -971,32 +975,32 @@ bool loadTexturesPBR(dj::TextureContainer& tc, const std::string& path, const st
 
 int loadTextures(dj::TextureContainer& tc)
 {
-	static constexpr unsigned int texturesCount = 2;
-	static const char* const texturePaths[texturesCount] = {
-		"res/textures/peeling-painted-metal-bl/peeling-painted-metal_",
-		//"res/textures/alien-panels-bl/alien-panels_",
-		//"res/textures/worn-painted-metal-bl/worn-painted-metal_",
-		//"res/textures/bricks-mortar-bl/bricks-mortar-",
-		//"res/textures/dirty-flat-stonework-bl/dirty-flat-stonework_",
-		"res/textures/windswept-wasteland-bl/windswept-wasteland_",
-		//"res/textures/windswept-wasteland-bl_512/windswept-wasteland_",
-		//"res/textures/square-block-vegetation-bl/square-blocks-vegetation_",
-		//"res/textures/rough-wet-cobble-bl/rough-wet-cobble-",
-	};
+	static const unsigned int& texsCount = dj_basicEnviro::pbrMaterialsCount;
+	static const auto& texPaths = dj_basicEnviro::pbrMaterialPaths;
+	static const auto& texExts = dj_basicEnviro::pbrMaterialFileExtensions;
 
-	for (unsigned i = 0; i < texturesCount; ++i)
+	static const unsigned int& skyboxesCount = dj_basicEnviro::skyboxMaterialsCount;
+	static const auto& skyboxPaths = dj_basicEnviro::skyboxMaterialPaths;
+	static const auto& skyboxExts = dj_basicEnviro::skyboxMaterialFileExtensions;
+
+	// Load textures for PBR materials
+	for (unsigned i = 0; i < texsCount; ++i)
 	{
-		if (!loadTexturesPBR(tc, texturePaths[i], ".png"))
+		if (!loadTexturesPBR(tc, texPaths[i].data(), texExts[i].data()))
 		{
 			return false;
 		}
 	}
 
-	// Load cubemaps
-	if (!loadCubemap(tc, "res/textures/skybox/", ".jpg"))
+	// Load textures for Cube Maps
+	for (unsigned i = 0; i < skyboxesCount; ++i)
 	{
-		return false;
+		if (!loadCubemap(tc, skyboxPaths[i].data(), skyboxExts[i].data()))
+		{
+			return false;
+		}
 	}
+
 
 	std::cout << dj::Log::infoPrefix() << "Estimated textures size in VRAM: " << (tc.getTexturesSize() / (1024u * 1024u)) << "MB" << std::endl;
 

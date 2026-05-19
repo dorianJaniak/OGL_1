@@ -31,6 +31,12 @@
     <Filter Include="Pliki źródłowe\Utils">
       <UniqueIdentifier>{742d8a68-98ff-47e5-a4f3-7622f76e7d4f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Pliki nagłówkowe\Basic3DEnviro">
+      <UniqueIdentifier>{3e18a2a2-6cb7-4034-825b-30357764c518}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\Basic3DEnviro">
+      <UniqueIdentifier>{4e65c145-40d5-42ca-9ac4-be4af07c6add}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OGL_1.cpp">
@@ -125,6 +131,9 @@
     </ClCompile>
     <ClCompile Include="Utils\GLWrapper.cpp">
       <Filter>Pliki źródłowe\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp">
+      <Filter>Pliki źródłowe\Basic3DEnviro</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -277,6 +286,9 @@
     </ClInclude>
     <ClInclude Include="Utils\GLWrapper.h">
       <Filter>Pliki nagłówkowe\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h">
+      <Filter>Pliki nagłówkowe\Basic3DEnviro</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
