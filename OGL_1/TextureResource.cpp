@@ -3,6 +3,8 @@
 #include "Utils/GLWrapper.h"
 using namespace dj;
 
+GLuint TextureResource::globalActiveID = 0u;
+
 TextureResource::TextureResource() noexcept
 	: id(0u)
 	, desc{}
@@ -25,6 +27,8 @@ TextureResource& TextureResource::operator=(TextureResource&& res) noexcept
 	borderColor = res.borderColor;
 
 	res.id = 0u;
+
+	return *this;
 }
 
 TextureResource::~TextureResource()
@@ -49,13 +53,43 @@ void TextureResource::unbind()
 
 void TextureResource::unbindAllTypes()
 {
-	static const auto& types = selectEnumMapping<TextureType>();
-	static const unsigned int size = std::size(types);
+	constexpr auto& types = selectEnumMapping<TextureType>();
+	constexpr unsigned int size = std::size(types);
 
 	for (unsigned int i = 0; i < size; ++i)
 	{
-		glBindTexture(types[i], 0u);
+		::glBindTexture(types[i], 0u);
 	}
+}
+
+bool TextureResource::nullify()
+{
+	if (desc.glType == TextureType::Texture2D)
+	{
+		transferData2D(desc.format.sourceColorFormat, desc.format.sourceValueType, nullptr);
+		return true;
+	}
+
+	if (desc.glType == TextureType::TextureCube)
+	{
+		constexpr TextureCubeSide sides[6] = {
+			TextureCubeSide::NegativeX,
+			TextureCubeSide::NegativeY,
+			TextureCubeSide::NegativeZ,
+			TextureCubeSide::PositiveX,
+			TextureCubeSide::PositiveY,
+			TextureCubeSide::PositiveZ
+		};
+
+		for (unsigned int i = 0; i < std::size(sides); ++i)
+		{
+			transferCubeSide(sides[i], desc.format.sourceColorFormat, desc.format.sourceValueType, nullptr);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 bool TextureResource::transferData2D(ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data)
@@ -179,7 +213,7 @@ unsigned int TextureResource::estimateSizeInVRAM() const
 	return 0u;
 }
 
-bool TextureResource::recreate(const TextureDesc& desc)
+void TextureResource::recreate(const TextureDesc& desc)
 {
 	if (id)
 	{

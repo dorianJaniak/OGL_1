@@ -11,13 +11,13 @@ namespace dj
 template <class T>
 constexpr GLenum toGLenum(T value)
 {
-	return selectEnumMapping<T>[static_cast<unsigned int>(value)]);
+	return selectEnumMapping<T>()[static_cast<unsigned int>(value)];
 }
 
 template <class T>
 constexpr unsigned int toBitSize(T value)
 {
-	return selectBitSizeMapping[static_cast<unsigned int>(value)]);
+	return selectBitSizeMapping<T>()[static_cast<unsigned int>(value)];
 }
 
 // Section: toEnum functions
@@ -31,7 +31,7 @@ std::optional<T> toEnum(GLenum value)
 	{
 		if (mapping[i] == value)
 		{
-			return value;
+			return static_cast<T>(value);
 		}
 	}
 

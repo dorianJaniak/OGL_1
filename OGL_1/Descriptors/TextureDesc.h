@@ -25,26 +25,26 @@ struct TextureDesc
 };
 
 //! \todo temporary functions: getTextureSamplingDescDefaultsFor2D() and getTextureSamplingDescDefaultsForCube()
-const TextureSamplingDesc& getTextureSamplingDescDefaultsFor2D()
+inline const TextureSamplingDesc& getTextureSamplingDescDefaultsFor2D()
 {
 	static TextureSamplingDesc desc = { 
-		GL_REPEAT,
-		GL_REPEAT,
-		GL_REPEAT,
-		GL_LINEAR_MIPMAP_LINEAR,
-		GL_LINEAR };
+		TextureWrapping::Repeat,
+		TextureWrapping::Repeat,
+		TextureWrapping::Repeat,
+		TextureFilteringMin::LinearMipmapLinear,
+		TextureFilteringMag::Linear };
 
 	return desc;
 }
 
-const TextureSamplingDesc& getTextureSamplingDescDefaultsForCube()
+inline const TextureSamplingDesc& getTextureSamplingDescDefaultsForCube()
 {
 	static TextureSamplingDesc desc = { 
-		GL_CLAMP_TO_EDGE,
-		GL_CLAMP_TO_EDGE,
-		GL_CLAMP_TO_EDGE,
-		GL_LINEAR,
-		GL_LINEAR };
+		TextureWrapping::ClampToEdge,
+		TextureWrapping::ClampToEdge,
+		TextureWrapping::ClampToEdge,
+		TextureFilteringMin::Linear,
+		TextureFilteringMag::Linear };
 
 	return desc;
 }

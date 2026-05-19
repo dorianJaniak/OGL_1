@@ -33,6 +33,7 @@ public:
 	static void unbindAllTypes();
 
 	// Image data setters
+	bool nullify();
 	bool transferData2D(ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data);
 	bool transferCubeSide(TextureCubeSide side, ColorFormatInSource sourceColorFormat, PixelDataTypeInSource sourceValueType, const void* data);
 
@@ -51,7 +52,7 @@ public:
 
 private:
 	// available only for TextureManager
-	bool recreate(const TextureDesc& desc);		// deletes ID, and creates new one	
+	void recreate(const TextureDesc& desc);		// deletes ID, and creates new one
 	void clear();								// deletes ID
 
 	// GL updates

@@ -5,8 +5,17 @@ using namespace dj;
 
 std::optional<TextureHandle> TextureManager::createEmptyTexture(const TextureDesc& desc)
 {
-	TextureResource tex;
-	tex.recreate(desc);
+	if (desc.resolution.width == 0u || desc.resolution.height == 0u)
+	{
+		return std::nullopt;
+	}
+
+	TextureResource res;
+	res.recreate(desc);
+	res.bind();
+	res.nullify();
+
+	return addTexture(std::move(res), desc, "");
 }
 
 std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps, bool flip)
@@ -50,7 +59,7 @@ std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSampl
 		glGenerateMipmap(toGLenum(desc.glType));
 	}
 
-	addTexture(std::move(res), desc, path);
+	return addTexture(std::move(res), desc, path);
 }
 
 std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const char* pathSuffixes[6], bool generateMipMaps, bool flip)
@@ -102,7 +111,7 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 	res.recreate(desc);
 
 	std::optional<TextureCubeSide> sideEnum = toEnum<TextureCubeSide>(0u);
-	assert(sideEnum, "Could not map index to TextureCubeSide");
+	assert(sideEnum && "Could not map index to TextureCubeSide");
 
 	res.transferCubeSide(*sideEnum, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
 
@@ -137,12 +146,12 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 		}
 
 		std::optional<TextureCubeSide> sideEnum = toEnum<TextureCubeSide>(i);
-		assert(sideEnum, "Could not map index to TextureCubeSide");
+		assert(sideEnum && "Could not map index to TextureCubeSide");
 
 		res.transferCubeSide(*sideEnum, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
 	}
 
-	addTexture(std::move(res), desc, pathPrefix);
+	return addTexture(std::move(res), desc, pathPrefix);
 }
 
 bool TextureManager::check(const TextureHandle& handle, std::function<bool(const TextureResource&)> fun) const
@@ -167,7 +176,7 @@ bool TextureManager::execute(const TextureHandle& handle, std::function<bool(Tex
 
 unsigned int TextureManager::getCount() const
 {
-	return textures.size();
+	return static_cast<unsigned int>(textures.size());
 }
 
 unsigned int TextureManager::getSizeInVRAM() const
@@ -305,13 +314,13 @@ std::optional<TextureHandle> TextureManager::addTexture(TextureResource&& res, c
 	{
 		try
 		{
-			index = textures.size();
+			index = static_cast<unsigned int>(textures.size());
 			textures.push_back(std::move(res));
 			paths.push_back(path);
 			generations.push_back(1u);
 			referencesCount.push_back(0u);
 		}
-		catch (const std::exception& e)
+		catch (const std::exception&)
 		{
 			// std::cerr << dj::Log::failPrefix() << "Could not add new texture to vectors - exception: " << e.what() << std::endl;
 			return std::nullopt;
@@ -336,10 +345,10 @@ std::optional<TextureFormatDesc> TextureManager::channelsCountToColorFormat(unsi
 {
 	switch (count)
 	{
-	case 1u: return { ColorFormatInSource::R, ColorFormatInDevice::R, PixelDataTypeInSource::UnsignedByte };
-	case 2u: return { ColorFormatInSource::RG, ColorFormatInDevice::RG, PixelDataTypeInSource::UnsignedByte };
-	case 3u: return { ColorFormatInSource::RGB, ColorFormatInDevice::RGB, PixelDataTypeInSource::UnsignedByte };
-	case 4u: return { ColorFormatInSource::RGBA, ColorFormatInDevice::RGBA, PixelDataTypeInSource::UnsignedByte };
+	case 1u: return TextureFormatDesc{ ColorFormatInDevice::R, ColorFormatInSource::R, PixelDataTypeInSource::UnsignedByte };
+	case 2u: return TextureFormatDesc{ ColorFormatInDevice::RG, ColorFormatInSource::RG, PixelDataTypeInSource::UnsignedByte };
+	case 3u: return TextureFormatDesc{ ColorFormatInDevice::RGB, ColorFormatInSource::RGB, PixelDataTypeInSource::UnsignedByte };
+	case 4u: return TextureFormatDesc{ ColorFormatInDevice::RGBA, ColorFormatInSource::RGBA, PixelDataTypeInSource::UnsignedByte };
 	}
 
 	return std::nullopt;

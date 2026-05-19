@@ -104,6 +104,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)..\third_party\tinygltf-release\tinygltf-release;$(SolutionDir)..\third_party\stb-master;$(SolutionDir)..\third_party\glm-master\glm;$(SolutionDir)..\third_party\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)..\third_party\glfw-3.4.bin.WIN64\include;$(SolutionDir)OGL_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,6 +123,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)..\third_party\tinygltf-release\tinygltf-release;$(SolutionDir)..\third_party\stb-master;$(SolutionDir)..\third_party\glm-master\glm;$(SolutionDir)..\third_party\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)..\third_party\glfw-3.4.bin.WIN64\include;$(SolutionDir)OGL_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

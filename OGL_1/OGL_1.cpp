@@ -21,6 +21,7 @@
 #include "RenderNodes/RenderDepthWorldNode.h"
 #include "RenderNodes/RenderSkyboxWorldNode.h"
 #include "RenderNodes/IRenderNode.h"
+#include "TextureManager.h"
 #include "TextureData.h"
 #include "TextureContainer.h"
 #include "MeshData.h"

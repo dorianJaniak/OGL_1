@@ -27,6 +27,7 @@ public:
 	TextureHandle(TextureHandle&& handle) noexcept;
 	TextureHandle& operator=(const TextureHandle& handle) noexcept;
 	TextureHandle& operator=(TextureHandle&& handle) noexcept;
+	bool operator==(const TextureHandle&) const = default;
 
 	~TextureHandle();
 
