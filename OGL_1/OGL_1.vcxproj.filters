@@ -135,6 +135,9 @@
     <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp">
       <Filter>Pliki źródłowe\Basic3DEnviro</Filter>
     </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextureData.h">

@@ -1016,63 +1016,26 @@ void configureRasterization()
 
 void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects)
 {
-	//Mesh initialization
-	dj::Mesh triangleMesh;
-	triangleMesh.addVertices(dj::triangleVerts, sizeof(dj::triangleVerts) / dj::vertexSize);
-	triangleMesh.addIndices(dj::triangleIndices, sizeof(dj::triangleIndices) / sizeof(unsigned int));
-	triangleMesh.computeBoundingBox();
-	if (!triangleMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for triangleMesh FAILED\n";
-	}
+	auto loadObject = [&meshData, &objects](auto& vertices, auto& indices, const char* objName) {
+		dj::Mesh mesh;
+		mesh.addVertices(vertices, std::size(vertices));
+		mesh.addIndices(indices, std::size(indices));
+		mesh.computeBoundingBox();
 
-	dj::Mesh triWallCubeMesh;
-	triWallCubeMesh.addVertices(dj::triWallCubeVerts, sizeof(dj::triWallCubeVerts) / dj::vertexSize);
-	triWallCubeMesh.addIndices(dj::triWallCubeIndices, sizeof(dj::triWallCubeIndices) / sizeof(unsigned int));
-	triWallCubeMesh.computeBoundingBox();
-	if (!triWallCubeMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for triWallCubeMesh FAILED\n";
-	}
+		if (!mesh.computeTangents())
+		{
+			std::cerr << "Tangents computation failed\n";
+		}
 
-	dj::Mesh planeMesh;
-	planeMesh.addVertices(dj::planeVerts, sizeof(dj::planeVerts) / dj::vertexSize);
-	planeMesh.addIndices(dj::planeIndices, sizeof(dj::planeIndices) / sizeof(unsigned int));
-	planeMesh.computeBoundingBox();
-	if (!planeMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for planeMesh FAILED\n";
-	}
+		dj::MeshAlignment meshIndices = meshData.addMesh(mesh);
+		dj::ObjectPtr object(std::make_shared<dj::Object>(meshIndices, mesh.getBoundingBox(), objName));
+		objects.push_back(object);
+	};
 
-	dj::Mesh boxMesh;
-	boxMesh.addVertices(dj::boxVerts, sizeof(dj::boxVerts) / dj::vertexSize);
-	boxMesh.addIndices(dj::boxIndices, sizeof(dj::boxIndices) / sizeof(unsigned int));
-	boxMesh.computeBoundingBox();
-	if (!boxMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for boxMesh FAILED\n";
-	}
-
-	//All meshes
-	dj::MeshAlignment triangleMeshIndices = meshData.addMesh(triangleMesh);
-	dj::MeshAlignment triWallCubeIndices = meshData.addMesh(triWallCubeMesh);
-	dj::MeshAlignment planeIndices = meshData.addMesh(planeMesh);
-	dj::MeshAlignment boxIndices = meshData.addMesh(boxMesh);
-	dj::ObjectPtr triangleObject(std::make_shared<dj::Object>(triangleMeshIndices, triangleMesh.getBoundingBox(), "Triangle"));
-	dj::ObjectPtr triWallCubeObject(std::make_shared<dj::Object>(triWallCubeIndices, triWallCubeMesh.getBoundingBox(), "TriWallCube"));
-	dj::ObjectPtr planeObject(std::make_shared<dj::Object>(planeIndices, planeMesh.getBoundingBox(), "Plane"));
-	dj::ObjectPtr cubeObject(std::make_shared<dj::Object>(boxIndices, boxMesh.getBoundingBox(), "Cube"));
-
-	//Initial object settings
-	//triangleObject->setDefaultMaterial(material);
-	//triWallCubeObject->setDefaultMaterial(material);
-	//planeObject->setDefaultMaterial(material);
-	//cubeObject->setDefaultMaterial(material);
-
-	objects.push_back(triangleObject);
-	objects.push_back(triWallCubeObject);
-	objects.push_back(planeObject);
-	objects.push_back(cubeObject);
+	loadObject(dj::triangleVerts, dj::triangleIndices, "Triangle");
+	loadObject(dj::triWallCubeVerts, dj::triWallCubeIndices, "TriWallCube");
+	loadObject(dj::planeVerts, dj::planeIndices, "Plane");
+	loadObject(dj::boxVerts, dj::boxIndices, "Cube");
 }
 
 void setDefaultMaterials(std::vector<dj::ObjectPtr>& objects, dj::MaterialPtr mat)
