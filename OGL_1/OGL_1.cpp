@@ -134,7 +134,6 @@ bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances);
 void manualObjectsTransformations(std::vector<dj::ObjectInstancePtr>& instances, const dj::TimeDrivenMovement& tdm);
 void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMovement& tdm);
-glm::mat3 calcNormalMatrixToModelSpace(const glm::mat4& model);
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
 
 // Helpers - Bindings
@@ -618,11 +617,6 @@ int main()
 	/* Clear */
 	mw.terminate();
 	return 0;
-}
-
-glm::mat3 calcNormalMatrixToModelSpace(const glm::mat4& model)
-{
-	return glm::mat3(glm::transpose(glm::inverse(model)));
 }
 
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model)
