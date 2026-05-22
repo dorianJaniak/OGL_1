@@ -102,8 +102,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\third_party\tinygltf-release\tinygltf-release;$(SolutionDir)..\third_party\stb-master;$(SolutionDir)..\third_party\glm-master\glm;$(SolutionDir)..\third_party\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)..\third_party\glfw-3.4.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\third_party\tinygltf-release\tinygltf-release;$(SolutionDir)..\third_party\stb-master;$(SolutionDir)..\third_party\glm-master\glm;$(SolutionDir)..\third_party\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)..\third_party\glfw-3.4.bin.WIN64\include;$(SolutionDir)OGL_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -120,8 +121,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\third_party\tinygltf-release\tinygltf-release;$(SolutionDir)..\third_party\stb-master;$(SolutionDir)..\third_party\glm-master\glm;$(SolutionDir)..\third_party\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)..\third_party\glfw-3.4.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\third_party\tinygltf-release\tinygltf-release;$(SolutionDir)..\third_party\stb-master;$(SolutionDir)..\third_party\glm-master\glm;$(SolutionDir)..\third_party\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)..\third_party\glfw-3.4.bin.WIN64\include;$(SolutionDir)OGL_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CameraCube.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
@@ -141,7 +144,10 @@
     <ClCompile Include="MeshData.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="ObjectTransformation.cpp" />
-    <ClCompile Include="OGL_1.cpp" />
+    <ClCompile Include="OGL_1.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Perspective.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="RenderNodes\CameraNodeProperty.cpp" />
@@ -152,18 +158,34 @@
     <ClCompile Include="RenderNodes\RenderSkyboxWorldNode.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShadowFramebuffer.cpp" />
-    <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="TextureContainer.cpp" />
     <ClCompile Include="TextureData.cpp" />
+    <ClCompile Include="TextureHandle.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="TextureReferencesManager.cpp" />
+    <ClCompile Include="TextureResource.cpp" />
     <ClCompile Include="TGLTFLoader.cpp" />
     <ClCompile Include="TimeDrivenMovement.cpp" />
+    <ClCompile Include="Utils\GLWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraCube.h" />
     <ClInclude Include="Definitions.h" />
     <ClInclude Include="DefinitionsGL.h" />
+    <ClInclude Include="Descriptors\FramebufferDesc.h" />
+    <ClInclude Include="Descriptors\RenderBufferAttachmentDesc.h" />
+    <ClInclude Include="Descriptors\ResolutionDesc.h" />
+    <ClInclude Include="Descriptors\TextureAttachmentDesc.h" />
+    <ClInclude Include="Descriptors\TextureDesc.h" />
+    <ClInclude Include="Descriptors\TextureFormatDesc.h" />
+    <ClInclude Include="Descriptors\TextureSamplingDesc.h" />
     <ClInclude Include="EngineKeywords.h" />
+    <ClInclude Include="Enums\Converters.h" />
+    <ClInclude Include="Enums\GLTypes.h" />
+    <ClInclude Include="Enums\TextureColorEnums.h" />
+    <ClInclude Include="Enums\TextureParameterEnums.h" />
+    <ClInclude Include="Enums\Utils.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="Perspective.h" />
     <ClInclude Include="QualitySettings.h" />
@@ -185,12 +207,16 @@
     <ClInclude Include="RenderNodes\RenderSkyboxWorldNode.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ShadowFramebuffer.h" />
-    <ClInclude Include="Texture.h" />
-    <ClInclude Include="TextureContainer.h" />
     <ClInclude Include="TextureData.h" />
+    <ClInclude Include="TextureHandle.h" />
+    <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="TextureReferencesManager.h" />
+    <ClInclude Include="TextureResource.h" />
     <ClInclude Include="TGLTFLoader.h" />
     <ClInclude Include="TimeDrivenMovement.h" />
     <ClInclude Include="UniformNames.h" />
+    <ClInclude Include="Utils\GLWrapper.h" />
+    <ClInclude Include="Utils\NonCopyableNonMovable.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="doc\Changelog.txt" />

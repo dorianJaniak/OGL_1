@@ -2,13 +2,13 @@
 #include "../Program.h"
 #include "../EngineKeywords.h"
 #include "../Light.h"
-#include "../Texture.h"
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 #include <iostream>
 using namespace dj;
 
 RenderShadedWorldNode::RenderShadedWorldNode(
+	const TextureManager& texMgr,
 	FramebufferPtr output, 
 	CameraPtr camera, 
 	GLuint ebo, 
@@ -17,7 +17,7 @@ RenderShadedWorldNode::RenderShadedWorldNode(
 	const std::vector<dj::LightFramebufferBinding>& pointFBOs,
 	std::vector<dj::LightPtr>& lights,
 	const std::string& name)
-	: IRenderWorldNode(output, ebo, objectInstances, name)
+	: IRenderWorldNode(texMgr, output, ebo, objectInstances, name)
 	, CameraNodeProperty(camera)
 	, lights(lights)
 	, spotFBOs(spotFBOs)
@@ -64,7 +64,7 @@ void RenderShadedWorldNode::uniformPerProgram(ConstProgramPtr program)
 	}
 
 	// Check if number of shadows and framebuffers are consistent
-	assert(pointShadowsCount >= 0 && spotShadowsCount >= 0, "More active shadows than Framebuffers available");
+	assert(pointShadowsCount >= 0 && spotShadowsCount >= 0 && "More active shadows than Framebuffers available");
 
 	unsigned int pointLightNo = 0u;
 	unsigned int spotLightNo = 0u;
@@ -85,24 +85,20 @@ void RenderShadedWorldNode::uniformPerProgram(ConstProgramPtr program)
 			std::string lightVPUniformName = std::string("u_lightVP[") + std::to_string(spotLightNo) + ']';
 			glUniformMatrix4fv(program->getUniformLocation(lightVPUniformName), 1, GL_FALSE, glm::value_ptr(lightVP));
 
-			if (dj::ConstTexturePtr tex = spotFBOs[spotLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); tex != nullptr)
+			if (std::optional<TextureHandle> texHandle = spotFBOs[spotLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); texHandle != std::nullopt)
 			{
-				TextureTypeInfo tti = tex->getTextureTypeInfo();
 				std::string shadowUniformName = std::string("u_shadow[") + std::to_string(spotLightNo) + ']';
-				bindAndUniformTexture(tti, program->getUniformLocation(shadowUniformName));
+				bindAndUniformTexture(*texHandle, program->getUniformLocation(shadowUniformName));
 			}
 
 			++spotLightNo;
 		}
 		else if (light->getType() == dj::Light::Type::Point && pointLightNo < pointFBOs.size())
 		{
-			TextureTypeInfo tti;
-			
-			if (dj::ConstTexturePtr tex = pointFBOs[pointLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); tex != nullptr)
+			if (std::optional<TextureHandle> texHandle = pointFBOs[pointLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); texHandle != std::nullopt)
 			{
-				tti = tex->getTextureTypeInfo();
 				std::string shadowUniformName = std::string("u_cubeShadow[") + std::to_string(pointLightNo) + ']';
-				bindAndUniformTexture(tti, program->getUniformLocation(shadowUniformName));
+				bindAndUniformTexture(*texHandle, program->getUniformLocation(shadowUniformName));
 			}
 
 			++pointLightNo;

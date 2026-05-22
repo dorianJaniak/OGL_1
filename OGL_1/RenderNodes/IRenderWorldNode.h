@@ -4,6 +4,11 @@
 #include "../Camera.h"
 #include <vector>
 
+namespace dj
+{
+class TextureManager;
+} // namespace dj
+
 namespace dj {
 
 /*! \class IRenderWorldNode
@@ -23,7 +28,7 @@ class IRenderWorldNode : public IRenderNode {
 	MaterialPtr customMaterial;
 
 public:
-	IRenderWorldNode(FramebufferPtr output, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name = "");
+	IRenderWorldNode(const TextureManager& texMgr, FramebufferPtr output, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name = "");
 
 	/*! \brief Replace all Materials assigned to Object Instances. Forces Node to render all Objects with this Material.
 		\param[in] material Replacement Material

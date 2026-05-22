@@ -1,7 +1,7 @@
 #include "Framebuffer.h"
-#include "Texture.h"
-using namespace dj;
+#include "TextureManager.h"
 #include <iostream>
+using namespace dj;
 
 Framebuffer::Framebuffer() noexcept
 	: rboID(0u)
@@ -27,25 +27,29 @@ Framebuffer::~Framebuffer()
 	std::cout << "Framebuffer destructed\n";
 }
 
-void Framebuffer::assignTextureAttachment(const dj::ConstTexturePtr& tex, GLenum attachment)
+bool Framebuffer::assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment)
 {
-	bind();
-	TextureTypeInfo tti = tex->getTextureTypeInfo();
-	if (tti.glType == GL_TEXTURE_CUBE_MAP)
+	const std::optional<GLuint> texID = texMgr.getID(handle);
+	if (!texID)
 	{
-		glFramebufferTexture(GL_FRAMEBUFFER, attachment, tti.id, 0);
-	}
-	else
-	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, tti.glType, tti.id, 0);
-	}
-	if ((width == 0u || height == 0u) || width > tex->getWidth() || height > tex->getHeight())
-	{
-		width = tex->getWidth();
-		height = tex->getHeight();
+		return false;
 	}
 
-	textures.push_back({ attachment, tex });
+	std::optional<ResolutionDesc> res = texMgr.getResolution(handle);
+	assert(res && "In this case ResolutionDesc always should be returned");
+
+	if (width == 0u || height == 0u || width > res->width || height > res->height)
+	{
+		width = res->width;
+		height = res->height;
+	}
+
+	bind();
+	glFramebufferTexture(GL_FRAMEBUFFER, attachment, *texID, 0);
+
+	textures.push_back({ attachment, handle });
+
+	return true;
 }
 
 bool Framebuffer::genRenderbufferAttachment(GLenum attachment, GLenum internalFormat)
@@ -85,17 +89,17 @@ GLenum Framebuffer::getFramebufferStatus()
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER);
 }
 
-dj::ConstTexturePtr Framebuffer::getTextureAttachment(GLenum attachment)
+std::optional<TextureHandle> Framebuffer::getTextureAttachment(GLenum attachment)
 {
 	for (const AttachmentTextureBinding& attachmentBinding : textures)
 	{
 		if (attachmentBinding.attachment == attachment)
 		{
-			return attachmentBinding.texture;
+			return attachmentBinding.texHandle;
 		}
 	}
 
-	return nullptr;
+	return std::nullopt;
 }
 
 unsigned int Framebuffer::getWidth() const

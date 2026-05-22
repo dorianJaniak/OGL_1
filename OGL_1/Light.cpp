@@ -93,7 +93,7 @@ const glm::vec3& Light::getPosition() const
 	return getTranslation();
 }
 
-const glm::mat3& Light::getRotation() const
+const glm::mat3 Light::getRotation() const
 {
 	return ObjectTransformation::getRotation();
 }

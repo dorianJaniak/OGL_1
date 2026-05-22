@@ -1,12 +1,11 @@
 #pragma once
 #include "../Framebuffer.h"
 #include "../DefinitionsGL.h"
-#include "../Texture.h"
 #include <string>
 #include <unordered_map>
 
 namespace dj {
-//struct TextureTypeInfo;
+class TextureManager;
 } // namespace dj
 
 namespace dj {
@@ -59,6 +58,7 @@ class IRenderNode {
 	constexpr static unsigned int c_maxTextureUnitsCount = GL_TEXTURE31 - GL_TEXTURE0;
 	constexpr static unsigned int c_maxTextureUnitOffsets = 16u;
 
+	const TextureManager& texMgr;
 	std::string name;
 	FramebufferPtr output;
 	GLuint clearFlags;
@@ -68,7 +68,7 @@ class IRenderNode {
 	unsigned int textureUnitNo;
 	unsigned int textureUnitNoOffsets[c_maxTextureUnitOffsets];
 
-	std::unordered_map<std::string, TextureTypeInfo> nodeInputTextures;
+	std::unordered_map<std::string, TextureHandle> nodeInputTextures;
 
 protected:
 	/*! \brief Core pure virtual Node's method. Needs to be implemented in derived class.
@@ -101,10 +101,10 @@ protected:
 	*	\param[in] uniformLocation uniform location for specific \ref Program
 	*	\return true if successful, false if there was no free Texture Units
 	*/
-	bool bindAndUniformTexture(const TextureTypeInfo& texInfo, GLint uniformLocation);
+	bool bindAndUniformTexture(const TextureHandle& texHandle, GLint uniformLocation);
 	/*! \brief Binds Texture [DEPRECEATED]
 	*/
-	bool bindTexture(const TextureTypeInfo& texInfo);
+	bool bindTexture(const TextureHandle& texHandle);
 	/*! \brief Binds and Uniforms Textures added to this Node
 	*	
 	*	It should be called from children node. It binds all Textures added
@@ -128,7 +128,7 @@ protected:
 
 
 public:
-	IRenderNode(FramebufferPtr output, const std::string& name = "");
+	IRenderNode(const TextureManager& texMgr, FramebufferPtr output, const std::string& name = "");
 	/*! \brief Core Node's method - starts Rendering
 		- Calls \ref preFrame method
 		- Calls pure virtual \ref draw method 
@@ -157,7 +157,7 @@ public:
 		\param[in] samplerName texture sampler name in Shader
 		\param[in] typeInfo texture info
 	*/
-	void addTexture(const std::string& samplerName, const TextureTypeInfo& typeInfo);
+	void addTexture(const std::string& samplerName, const TextureHandle& handle);
 
 	/*! \brief Sets all flags related to FBO
 		- binds FBO,

@@ -4,8 +4,8 @@
 #include <gtc/type_ptr.hpp>
 using namespace dj;
 
-RenderSkyboxWorldNode::RenderSkyboxWorldNode(FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name)
-	: IRenderWorldNode(output, ebo, objectInstances, name)
+RenderSkyboxWorldNode::RenderSkyboxWorldNode(const TextureManager& texMgr, FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name)
+	: IRenderWorldNode(texMgr, output, ebo, objectInstances, name)
 	, CameraNodeProperty(camera)
 {
 

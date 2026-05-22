@@ -21,8 +21,7 @@
 #include "RenderNodes/RenderDepthWorldNode.h"
 #include "RenderNodes/RenderSkyboxWorldNode.h"
 #include "RenderNodes/IRenderNode.h"
-#include "TextureData.h"
-#include "TextureContainer.h"
+#include "TextureManager.h"
 #include "MeshData.h"
 #include "Mesh.h"
 #include "Object.h"
@@ -40,6 +39,8 @@
 #include "EngineKeywords.h"
 #include "Predefinitions\PredefinedShaders.h"
 #include "Predefinitions\PredefinedMeshes.h"
+
+#include "Basic3DEnviro/Basic3DEnviro.h"
 
 #include <array>
 
@@ -104,14 +105,11 @@ public:
 // Helpers - Loaders
 bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
 bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
-GLenum channelsToColorFormat(const TextureData& tex);
-//GLuint loadCubemap(const char* pathPrefix, const char* fileType);
-bool loadCubemap(dj::TextureContainer& textures, const char* pathPrefix, const char* fileType);
-//bool loadTexture2D(dj::TextureContainer& textures, dj::TextureContainer::Purpose purpose, const char* path, bool srgb);
-bool loadTexture2D(dj::TextureContainer& textures, const char* path, bool srgb);
-//int loadTextures(std::vector<dj::TextureID>& textures);
-bool loadTexturesPBR(dj::TextureContainer& tc, const std::string& path, const std::string& extension);
-int loadTextures(dj::TextureContainer& textures);
+
+bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures);
+bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension);
+bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension);
+
 void configureRasterization();
 void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects);
 void setDefaultMaterials(std::vector<dj::ObjectPtr>& objects, dj::MaterialPtr mat);
@@ -120,18 +118,19 @@ void createObjectInstances(const std::vector<dj::ObjectPtr>& objects, std::vecto
 void loadLights(std::vector<dj::LightPtr>& lights);
 
 // Helpers - Relations
-bool createShadows(const std::vector<dj::LightPtr>& lights,
+bool createShadows(dj::TextureManager& texMgr,
+	const std::vector<dj::LightPtr>& lights,
 	std::vector<dj::LightFramebufferBinding>& spotFBOs,
 	std::vector<dj::LightFramebufferBinding>& pointFBOs);
-bool createMaterials(std::vector<dj::MaterialPtr>& materials, 
-	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms, 
-	const std::vector<dj::TexturePtr> &textures);
+bool createMaterials(std::vector<dj::MaterialPtr>& materials,
+	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
+	const std::vector<dj::TextureHandle>& texturesPBR,
+	const std::vector<dj::TextureHandle>& texturesCube);
 
 // Helpers - Transformations
 void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances);
 void manualObjectsTransformations(std::vector<dj::ObjectInstancePtr>& instances, const dj::TimeDrivenMovement& tdm);
 void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMovement& tdm);
-glm::mat3 calcNormalMatrixToModelSpace(const glm::mat4& model);
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
 
 // Helpers - Bindings
@@ -246,7 +245,9 @@ int main()
 	const GlobalSettings &gs = GlobalSettings::getInstance();
 	dj::TimeDrivenMovement tdm;
 
-	dj::TextureContainer tc;							// Using only Purpose::File (textures and skybox)
+	dj::TextureManager texMgr;
+	std::optional<dj::TextureHandle> cameraIDs[3];		// Temporary - active cameras
+
 	std::vector<dj::ObjectPtr> objects;
 	std::vector<dj::ObjectInstancePtr> objectInstances;
 	std::vector<dj::MaterialPtr> materials;
@@ -297,21 +298,41 @@ int main()
 	// STAGE 5 :::: FBO Creation
 	dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
 	fbo->bind();
-	dj::TexturePtr fboTexture = std::make_shared<dj::Texture>(GL_TEXTURE_2D);
-	fboTexture->bind();
-	fboTexture->setFiltering(GL_NEAREST, GL_NEAREST);
-	fboTexture->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-	fboTexture->setSize(mw.getWidth(), mw.getHeight());
-	fboTexture->transferData2D(quality.getActive<dj::EngineQuality::MainFBHighPrecision>() ? GL_RGB16F : GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, nullptr, false);
-	
-	fbo->assignTextureAttachment(fboTexture, GL_COLOR_ATTACHMENT0);
-	fbo->genRenderbufferAttachment(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
-	if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
 	{
-		mw.terminate();
-		return -1;
+		dj::TextureDesc desc{};
+		desc.glType = dj::TextureType::Texture2D;
+		desc.resolution.width = mw.getWidth();
+		desc.resolution.height = mw.getHeight();
+		desc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
+		desc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
+		desc.sampling.wrapS = dj::TextureWrapping::ClampToEdge;
+		desc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
+		desc.sampling.wrapR = dj::TextureWrapping::Repeat;
+		desc.format.inGPUColorFormat = (quality.getActive<dj::EngineQuality::MainFBHighPrecision>() ?
+			dj::ColorFormatInDevice::RGB16F : dj::ColorFormatInDevice::RGB);
+		desc.format.sourceColorFormat = dj::ColorFormatInSource::RGB;
+		desc.format.sourceValueType = dj::PixelDataTypeInSource::UnsignedByte;
+
+		std::optional<dj::TextureHandle> fboTexture = texMgr.createEmptyTexture(desc);
+
+		if (!fboTexture)
+		{
+			std::cerr << "Could not create main FBO Texture\n";
+			mw.terminate();
+			return -1;
+		}
+
+		fbo->assignTextureAttachment(texMgr, *fboTexture, GL_COLOR_ATTACHMENT0);
+		fbo->genRenderbufferAttachment(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
+		if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
+		{
+			mw.terminate();
+			return -1;
+		}
+		fbo->unbind();
+
+		cameraIDs[0] = fboTexture;
 	}
-	fbo->unbind();
 
 	GLuint svbo, svao;
 	glGenBuffers(1, &svbo);
@@ -326,7 +347,7 @@ int main()
 	glEnableVertexAttribArray(1);
 
 	// STAGE 6 :::: FBO for shadow maps
-	if (!createShadows(lights, spotFBOs, pointFBOs))
+	if (!createShadows(texMgr, lights, spotFBOs, pointFBOs))
 	{
 		mw.terminate();
 		return -1;
@@ -363,14 +384,17 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData.getIndicesDataSize(), &meshData.getAllIndices()[0], GL_STATIC_DRAW);
 
 	// STAGE 7 :::: Materials Creation
-	if (!loadTextures(tc))
+	std::vector<dj::TextureHandle> pbrTextures;
+	std::vector<dj::TextureHandle> skyboxTextures;
+
+	if (!loadTextures(texMgr, pbrTextures, skyboxTextures))
 	{
 		mw.terminate();
 		return -1;
 	}
 
 	// Materials configuration
-	if (!createMaterials(materials, enginePrograms, tc.getTextures(dj::TextureTag::File)))
+	if (!createMaterials(materials, enginePrograms, pbrTextures, skyboxTextures))
 	{
 		mw.terminate();
 		return -1;
@@ -383,14 +407,9 @@ int main()
 	configureRasterization();
 
 	assert(spotFBOs.size() >= 2);
-	GLuint cameraIDs[3] = { fboTexture->getID(), 0u, 0u };
+	for (unsigned int i = 0u; i < 2u; ++i)
 	{
-		for (unsigned int i = 0u; i < 2u; ++i)
-		{
-			dj::ConstTexturePtr tex = spotFBOs[i].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
-
-			cameraIDs[i + 1u] = (tex != nullptr ? tex->getID() : 0u);
-		}
+		cameraIDs[i + 1u] = spotFBOs[i].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
 	}
 
 	// Define some color
@@ -420,15 +439,15 @@ int main()
 		skyboxObjectInstances.push_back(skyboxCubeObjInst);
 	}
 	// VARIANT 1
-	//dj::RenderSkyboxWorldNode skyboxNode{ fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
+	//dj::RenderSkyboxWorldNode skyboxNode{ texMgr, fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
 	//skyboxNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
-	//dj::RenderShadedWorldNode worldNode{ fbo, camera, ebo, objectInstances, shadows, pointShadows, lights, std::string("Main Color - World") };
+	//dj::RenderShadedWorldNode worldNode{ texMgr, fbo, camera, ebo, objectInstances, shadows, pointShadows, lights, std::string("Main Color - World") };
 	//worldNode.setConfiguration(GL_NONE, true, true, GL_NONE);
 
 	// VARIANT 2
-	dj::RenderShadedWorldNode worldNode{ fbo, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World") };
+	dj::RenderShadedWorldNode worldNode{ texMgr, fbo, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World") };
 	worldNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, true, true, GL_NONE);
-	dj::RenderSkyboxWorldNode skyboxNode{ fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
+	dj::RenderSkyboxWorldNode skyboxNode{ texMgr, fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
 	skyboxNode.setConfiguration(GL_NONE, true, false, GL_NONE);
 
 	std::vector<dj::ObjectInstancePtr> cubeMapDebugObjectInstances;
@@ -437,7 +456,7 @@ int main()
 		cubeObjInst->setMaterial(materials.at(3u));
 		cubeMapDebugObjectInstances.push_back(cubeObjInst);
 	}
-	dj::RenderSkyboxWorldNode cubeMapDebugNode{ fbo, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
+	dj::RenderSkyboxWorldNode cubeMapDebugNode{ texMgr, fbo, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
 	cubeMapDebugNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
 
 
@@ -477,7 +496,6 @@ int main()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
 		// Stage 9.3.1.1 :::: Render Spot Shadow Maps (Depth Tests)
-		//for (auto& shadow : shadows)
 		for (auto& shadow : spotFBOs)
 		{
 			// Pointer to active program
@@ -542,11 +560,10 @@ int main()
 		// Stage 9.3.2 :::: Render Debug Cubemap
 		if (gs.getActiveCameraIndex() == 3u)
 		{
-			dj::ConstTexturePtr shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
-			if (shTex != nullptr)
+			std::optional<dj::TextureHandle> shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
+			if (shTex)
 			{
-				cubeMapDebugNode.addTexture("u_skybox", shTex->getTextureTypeInfo());
-
+				cubeMapDebugNode.addTexture("u_skybox", *shTex);
 			}
 			cubeMapDebugNode.run();
 
@@ -591,13 +608,20 @@ int main()
 		glBindVertexArray(svbo);
 		glDisable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE11);
+
 		if (gs.getActiveCameraIndex() == 3u)
 		{
-			glBindTexture(GL_TEXTURE_2D, cameraIDs[0u]);
+			if (cameraIDs[0u])
+			{
+				texMgr.bind(*cameraIDs[0u]);
+			}
 		}
 		else
 		{
-			glBindTexture(GL_TEXTURE_2D, cameraIDs[gs.getActiveCameraIndex()]);
+			if (cameraIDs[gs.getActiveCameraIndex()])
+			{
+				texMgr.bind(*cameraIDs[gs.getActiveCameraIndex()]);
+			}
 		}
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -613,11 +637,6 @@ int main()
 	/* Clear */
 	mw.terminate();
 	return 0;
-}
-
-glm::mat3 calcNormalMatrixToModelSpace(const glm::mat4& model)
-{
-	return glm::mat3(glm::transpose(glm::inverse(model)));
 }
 
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model)
@@ -784,16 +803,6 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 		registerLightsUniforms(prePBRProgram, lightsCount, "spotExtCos");
 		registerLightsUniforms(prePBRProgram, lightsCount, "spotIntCos");
 		registerLightsUniforms(prePBRProgram, lightsCount, "shadowActive");
-		// Assigning Texture Units to the uniforms. Such assignment is kept in the active Program
-		//prePBRProgram->assignTextureUnit("u_material.albedo", GL_TEXTURE0);
-		//prePBRProgram->assignTextureUnit("u_material.roughness", GL_TEXTURE1);
-		//prePBRProgram->assignTextureUnit("u_material.metallic", GL_TEXTURE2);
-		//prePBRProgram->assignTextureUnit("u_material.normal", GL_TEXTURE3);
-		//prePBRProgram->assignTextureUnit("u_cubeShadow[0]", GL_TEXTURE6);
-		//prePBRProgram->assignTextureUnit("u_cubeShadow[1]", GL_TEXTURE7);
-		//prePBRProgram->assignTextureUnit("u_shadow[0]", GL_TEXTURE8);
-		//prePBRProgram->assignTextureUnit("u_shadow[1]", GL_TEXTURE9);
-		//prePBRProgram->assignTextureUnit("u_skybox", GL_TEXTURE10);
 
 		postprocessProgram->use();
 		check(postprocessProgram->registerUniform("frame"));
@@ -844,107 +853,36 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 	return true;
 }
 
-GLenum channelsToColorFormat(const TextureData& tex)
+bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures)
 {
-	GLenum colorFormat = GL_RED;
-	switch (tex.getChannelsCount())
+	static const unsigned int& texsCount = dj_basicEnviro::pbrMaterialsCount;
+	static const auto& texPaths = dj_basicEnviro::pbrMaterialPaths;
+	static const auto& texExts = dj_basicEnviro::pbrMaterialFileExtensions;
+
+	static const unsigned int& skyboxesCount = dj_basicEnviro::skyboxMaterialsCount;
+	static const auto& skyboxPaths = dj_basicEnviro::skyboxMaterialPaths;
+	static const auto& skyboxExts = dj_basicEnviro::skyboxMaterialFileExtensions;
+
+	for (unsigned int i = 0u; i < texsCount; ++i)
 	{
-	case 1: colorFormat = GL_RED; break;
-	case 2: colorFormat = GL_RG; break;
-	case 3: colorFormat = GL_RGB; break;
-	case 4: colorFormat = GL_RGBA; break;
-	default: break;
-	};
-
-	return colorFormat;
-}
-
-bool loadCubemap(dj::TextureContainer& tc, const char* pathPrefix, const char* fileType)
-{
-	const unsigned int sidesCount = 6;
-	const char* const pathSufixes[sidesCount] = { "right", "left", "top", "bottom", "front", "back" };
-	const GLenum sides[sidesCount] = { GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-										GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-										GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-										GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-										GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-										GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  };
-	
-	dj::Texture tex(GL_TEXTURE_CUBE_MAP);
-	tex.bind();
-	tex.setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-	tex.setFiltering(GL_LINEAR, GL_LINEAR);
-
-	for (unsigned int i = 0; i < sidesCount; ++i)
-	{
-		std::string path = std::string(pathPrefix) + std::string(pathSufixes[i]) + std::string(fileType);
-		TextureData texD(path.c_str());
-
-		if (!texD.isOk())
+		if (!loadTexturesPBR(texMgr, pbrTextures, texPaths[i].data(), texExts[i].data()))
 		{
-			std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;
-			return false;
-		}
-
-		GLenum colorFormat = channelsToColorFormat(texD);
-		tex.setSize(texD.getWidth(), texD.getHeight());
-
-		if(!tex.transferDataCubeSide(sides[i], GL_SRGB, colorFormat, GL_UNSIGNED_BYTE, texD.getData(), false))
-		{
-			std::cerr << dj::Log::failPrefix() << "Could not send texture to GPU: " << path << std::endl;
 			return false;
 		}
 	}
 
-	if(!tc.addTexture(std::move(tex), dj::TextureTag::TextureCube, dj::TextureTag::File))
+	for (unsigned int i = 0u; i < skyboxesCount; ++i)
 	{
-		std::cerr << dj::Log::failPrefix() << "Could not add texture to TextureContainer: " << pathPrefix << std::endl;
-		return false;
+		if (!loadTextureCube(texMgr, skyboxTextures, skyboxPaths[i].data(), skyboxExts[i].data()))
+		{
+			return false;
+		}
 	}
-
-	std::cout << dj::Log::okPrefix() << "Loaded Cubemap: " << pathPrefix << "; Size: " << tex.getWidth() << ", " << tex.getHeight() << std::endl;
 
 	return true;
 }
 
-bool loadTexture2D(dj::TextureContainer &tc, const char* path, bool srgb)
-{
-	dj::Texture tex(GL_TEXTURE_2D);
-	tex.setWrapping(GL_REPEAT, GL_REPEAT);
-	tex.setFiltering(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
-
-	TextureData texD(path, true);
-	if (!texD.isOk())
-	{
-		std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;
-		return false;
-	}
-
-	GLenum colorFormat = channelsToColorFormat(texD);
-	GLenum imageColorFormat = ((colorFormat == GL_RGB && srgb) ? GL_SRGB : colorFormat);
-
-	// Sending texture data to GPU
-	tex.setSize(texD.getWidth(), texD.getHeight());
-	if (!tex.transferData2D(imageColorFormat, colorFormat, GL_UNSIGNED_BYTE, texD.getData(), true))
-	{
-		std::cerr << dj::Log::failPrefix() << "Could not send texture to GPU: " << path << std::endl;
-		return false;
-	}
-
-	//glTexParameteri(tex.getTextureTypeInfo().glType, GL_TEXTURE_BASE_LEVEL, 0);
-
-	if (!tc.addTexture(std::move(tex), dj::TextureTag::Texture2D, dj::TextureTag::File))
-	{
-		std::cerr << dj::Log::failPrefix() << "Could not add texture to TextureContainer: " << path << std::endl;
-		return false;
-	}
-	
-	std::cout << dj::Log::okPrefix() << "Loaded Texture: " << path << "; Size: " << texD.getWidth() << ", " << texD.getHeight() << "; Channels: " << texD.getChannelsCount() << std::endl;
-
-	return true;
-}
-
-bool loadTexturesPBR(dj::TextureContainer& tc, const std::string& path, const std::string& extension)
+bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension)
 {
 	static const std::string normalSuffix = "normal-ogl";
 	static const std::array<std::string, 4> suffixes = {
@@ -953,51 +891,46 @@ bool loadTexturesPBR(dj::TextureContainer& tc, const std::string& path, const st
 		"metallic",
 		normalSuffix,
 	};
+	static const dj::TextureSamplingDesc& sampling = dj::getTextureSamplingDescDefaultsFor2D();
 
 	for (const auto suffix : suffixes)
 	{
 		const std::string fullPath = path + suffix + extension;
-		bool srgb = (suffix != normalSuffix);
-		
-		if (!loadTexture2D(tc, fullPath.c_str(), srgb))
+		bool allowSRGB = (suffix != normalSuffix);
+		std::optional<dj::TextureHandle> handle = texMgr.create2DFromFile(sampling, fullPath.c_str(), true, true, allowSRGB);
+
+		if (!handle)
 		{
+			std::cerr << dj::Log::failPrefix() << "Could not load texture: " << fullPath << std::endl;
 			return false;
 		}
+
+		pbrTextures.push_back(*handle);
 	}
 
 	return true;
 }
 
-int loadTextures(dj::TextureContainer& tc)
+bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension)
 {
-	static constexpr unsigned int texturesCount = 2;
-	static const char* const texturePaths[texturesCount] = {
-		"res/textures/peeling-painted-metal-bl/peeling-painted-metal_",
-		//"res/textures/alien-panels-bl/alien-panels_",
-		//"res/textures/worn-painted-metal-bl/worn-painted-metal_",
-		//"res/textures/bricks-mortar-bl/bricks-mortar-",
-		//"res/textures/dirty-flat-stonework-bl/dirty-flat-stonework_",
-		"res/textures/windswept-wasteland-bl/windswept-wasteland_",
-		//"res/textures/windswept-wasteland-bl_512/windswept-wasteland_",
-		//"res/textures/square-block-vegetation-bl/square-blocks-vegetation_",
-		//"res/textures/rough-wet-cobble-bl/rough-wet-cobble-",
-	};
+	static const dj::TextureSamplingDesc& sampling = dj::getTextureSamplingDescDefaultsForCube();
+	const std::array<dj::TextureManager::CubeSideMapping, 6u> suffixesMapping{ {
+		{dj::TextureCubeSide::PositiveX, std::string("right") + std::string(extension)},
+		{dj::TextureCubeSide::NegativeX, std::string("left") + std::string(extension)},
+		{dj::TextureCubeSide::PositiveY, std::string("top") + std::string(extension)},
+		{dj::TextureCubeSide::NegativeY, std::string("bottom") + std::string(extension)},
+		{dj::TextureCubeSide::PositiveZ, std::string("front") + std::string(extension)},
+		{dj::TextureCubeSide::NegativeZ, std::string("back") + std::string(extension)}
+	} };
 
-	for (unsigned i = 0; i < texturesCount; ++i)
+	std::optional<dj::TextureHandle> handle = texMgr.createCubeMapFromFile(sampling, path, suffixesMapping, false, false, true);
+	if (!handle)
 	{
-		if (!loadTexturesPBR(tc, texturePaths[i], ".png"))
-		{
-			return false;
-		}
-	}
-
-	// Load cubemaps
-	if (!loadCubemap(tc, "res/textures/skybox/", ".jpg"))
-	{
+		std::cerr << dj::Log::failPrefix() << "Could not load cubemap: " << path << std::endl;
 		return false;
 	}
 
-	std::cout << dj::Log::infoPrefix() << "Estimated textures size in VRAM: " << (tc.getTexturesSize() / (1024u * 1024u)) << "MB" << std::endl;
+	cubeTextures.push_back(*handle);
 
 	return true;
 }
@@ -1011,63 +944,26 @@ void configureRasterization()
 
 void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects)
 {
-	//Mesh initialization
-	dj::Mesh triangleMesh;
-	triangleMesh.addVertices(dj::triangleVerts, sizeof(dj::triangleVerts) / dj::vertexSize);
-	triangleMesh.addIndices(dj::triangleIndices, sizeof(dj::triangleIndices) / sizeof(unsigned int));
-	triangleMesh.computeBoundingBox();
-	if (!triangleMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for triangleMesh FAILED\n";
-	}
+	auto loadObject = [&meshData, &objects](auto& vertices, auto& indices, const char* objName) {
+		dj::Mesh mesh;
+		mesh.addVertices(vertices, std::size(vertices));
+		mesh.addIndices(indices, std::size(indices));
+		mesh.computeBoundingBox();
 
-	dj::Mesh triWallCubeMesh;
-	triWallCubeMesh.addVertices(dj::triWallCubeVerts, sizeof(dj::triWallCubeVerts) / dj::vertexSize);
-	triWallCubeMesh.addIndices(dj::triWallCubeIndices, sizeof(dj::triWallCubeIndices) / sizeof(unsigned int));
-	triWallCubeMesh.computeBoundingBox();
-	if (!triWallCubeMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for triWallCubeMesh FAILED\n";
-	}
+		if (!mesh.computeTangents())
+		{
+			std::cerr << "Tangents computation failed\n";
+		}
 
-	dj::Mesh planeMesh;
-	planeMesh.addVertices(dj::planeVerts, sizeof(dj::planeVerts) / dj::vertexSize);
-	planeMesh.addIndices(dj::planeIndices, sizeof(dj::planeIndices) / sizeof(unsigned int));
-	planeMesh.computeBoundingBox();
-	if (!planeMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for planeMesh FAILED\n";
-	}
+		dj::MeshAlignment meshIndices = meshData.addMesh(mesh);
+		dj::ObjectPtr object(std::make_shared<dj::Object>(meshIndices, mesh.getBoundingBox(), objName));
+		objects.push_back(object);
+	};
 
-	dj::Mesh boxMesh;
-	boxMesh.addVertices(dj::boxVerts, sizeof(dj::boxVerts) / dj::vertexSize);
-	boxMesh.addIndices(dj::boxIndices, sizeof(dj::boxIndices) / sizeof(unsigned int));
-	boxMesh.computeBoundingBox();
-	if (!boxMesh.computeTangents())
-	{
-		std::cerr << "Tangents computation for boxMesh FAILED\n";
-	}
-
-	//All meshes
-	dj::MeshAlignment triangleMeshIndices = meshData.addMesh(triangleMesh);
-	dj::MeshAlignment triWallCubeIndices = meshData.addMesh(triWallCubeMesh);
-	dj::MeshAlignment planeIndices = meshData.addMesh(planeMesh);
-	dj::MeshAlignment boxIndices = meshData.addMesh(boxMesh);
-	dj::ObjectPtr triangleObject(std::make_shared<dj::Object>(triangleMeshIndices, triangleMesh.getBoundingBox(), "Triangle"));
-	dj::ObjectPtr triWallCubeObject(std::make_shared<dj::Object>(triWallCubeIndices, triWallCubeMesh.getBoundingBox(), "TriWallCube"));
-	dj::ObjectPtr planeObject(std::make_shared<dj::Object>(planeIndices, planeMesh.getBoundingBox(), "Plane"));
-	dj::ObjectPtr cubeObject(std::make_shared<dj::Object>(boxIndices, boxMesh.getBoundingBox(), "Cube"));
-
-	//Initial object settings
-	//triangleObject->setDefaultMaterial(material);
-	//triWallCubeObject->setDefaultMaterial(material);
-	//planeObject->setDefaultMaterial(material);
-	//cubeObject->setDefaultMaterial(material);
-
-	objects.push_back(triangleObject);
-	objects.push_back(triWallCubeObject);
-	objects.push_back(planeObject);
-	objects.push_back(cubeObject);
+	loadObject(dj::triangleVerts, dj::triangleIndices, "Triangle");
+	loadObject(dj::triWallCubeVerts, dj::triWallCubeIndices, "TriWallCube");
+	loadObject(dj::planeVerts, dj::planeIndices, "Plane");
+	loadObject(dj::boxVerts, dj::boxIndices, "Cube");
 }
 
 void setDefaultMaterials(std::vector<dj::ObjectPtr>& objects, dj::MaterialPtr mat)
@@ -1134,7 +1030,8 @@ void loadLights(std::vector<dj::LightPtr>& lights)
 	lights.push_back(light4);
 }
 
-bool createShadows(const std::vector<dj::LightPtr>& lights, 
+bool createShadows(dj::TextureManager& texMgr, 
+					const std::vector<dj::LightPtr>& lights, 
 					std::vector<dj::LightFramebufferBinding>& spotFBOs,
 					std::vector<dj::LightFramebufferBinding>& pointFBOs)
 {
@@ -1147,18 +1044,31 @@ bool createShadows(const std::vector<dj::LightPtr>& lights,
 		{
 			std::cout << "Creating Framebuffer for 2D Shadow\n";
 
-			dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_2D);
-			tex->bind();
-			tex->setSize(c_shadowRes, c_shadowRes);
-			tex->setFiltering(GL_NEAREST, GL_NEAREST);
-			tex->setWrapping(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
-			tex->setBorderColor(1.0f, 1.0f, 1.0f, 1.0f);
+			dj::TextureDesc desc{};
+			desc.glType = dj::TextureType::Texture2D;
+			desc.resolution.width = c_shadowRes;
+			desc.resolution.height = c_shadowRes;
+			desc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
+			desc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
+			desc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
+			desc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
+			desc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
+			desc.sampling.wrapS = dj::TextureWrapping::ClampToBorder;
+			desc.sampling.wrapT = dj::TextureWrapping::ClampToBorder;
+			desc.mipmaps = false;
 
-			tex->transferData2D(GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+			std::optional<dj::TextureHandle> handle = texMgr.createEmptyTexture(desc);
+			if (!handle)
+			{
+				std::cerr << dj::Log::failPrefix() << "Could not create texture for Spotlight\n";
+				return false;
+			}
+
+			texMgr.setBorderColor(*handle, { 1.0f, 1.0f, 1.0f, 1.0f });
 
 			dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
 			fbo->bind();
-			fbo->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
+			fbo->assignTextureAttachment(texMgr, *handle, GL_DEPTH_ATTACHMENT);
 			fbo->nullifyData();
 
 			ok &= verifyFramebufferStatus(fbo->getFramebufferStatus());
@@ -1179,22 +1089,31 @@ bool createShadows(const std::vector<dj::LightPtr>& lights,
 				GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
 			};
 
-			// Create Cube-Texture
-			dj::TexturePtr tex = std::make_shared<dj::Texture>(GL_TEXTURE_CUBE_MAP);
-			tex->bind();
-			tex->setSize(c_shadowRes, c_shadowRes);
-			tex->setFiltering(GL_LINEAR, GL_LINEAR);
-			tex->setWrapping(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+			dj::TextureDesc desc{};
+			desc.glType = dj::TextureType::TextureCube;
+			desc.resolution.width = c_shadowRes;
+			desc.resolution.height = c_shadowRes;
+			desc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
+			desc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
+			desc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
+			desc.sampling.minFilter = dj::TextureFilteringMin::Linear;
+			desc.sampling.magFilter = dj::TextureFilteringMag::Linear;
+			desc.sampling.wrapS = dj::TextureWrapping::ClampToEdge;
+			desc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
+			desc.sampling.wrapR = dj::TextureWrapping::ClampToEdge;
+			desc.mipmaps = false;
 
-			for (unsigned int i = 0; i < 6; ++i)
+			std::optional<dj::TextureHandle> handle = texMgr.createEmptyTexture(desc);
+			if (!handle)
 			{
-				tex->transferDataCubeSide(sides[i], GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr, false);
+				std::cerr << dj::Log::failPrefix() << "Could not create texture for Pointlight\n";
+				return false;
 			}
 
 			// Create Framebuffer (Cube)
 			dj::FramebufferPtr cubeDepthFBO = std::make_shared<dj::Framebuffer>();
 			cubeDepthFBO->bind();
-			cubeDepthFBO->assignTextureAttachment(tex, GL_DEPTH_ATTACHMENT);
+			cubeDepthFBO->assignTextureAttachment(texMgr, *handle, GL_DEPTH_ATTACHMENT);
 			cubeDepthFBO->nullifyData();
 			ok &= verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
 			cubeDepthFBO->unbind();
@@ -1208,8 +1127,12 @@ bool createShadows(const std::vector<dj::LightPtr>& lights,
 
 bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
-	const std::vector<dj::TexturePtr>& textures)
+	const std::vector<dj::TextureHandle>& texturesPBR,
+	const std::vector<dj::TextureHandle>& texturesCube)
 {
+
+	assert(texturesPBR.size() >= 8u && "Too few textures in texturesPBR");
+	assert(texturesCube.size() >= 1u && "Too few textures in texturesCube");
 	try
 	{
 		dj::ProgramPtr prePBRProgram = enginePrograms.at(dj::EngineProgramID::prePBR);
@@ -1228,20 +1151,19 @@ bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 
 		material->setProgram(prePBRProgram);
 		material2->setProgram(prePBRProgram);
-		material->addTexture(textures.at(0)->getTextureTypeInfo(), "u_material.albedo");
-		material->addTexture(textures.at(1)->getTextureTypeInfo(), "u_material.roughness");
-		material->addTexture(textures.at(2)->getTextureTypeInfo(), "u_material.metallic");
-		material->addTexture(textures.at(3)->getTextureTypeInfo(), "u_material.normal");
-		//material->addTexture(textures.at(4)->getTextureTypeInfo(), "u_skybox");
-		material2->addTexture(textures.at(4)->getTextureTypeInfo(), "u_material.albedo");
-		material2->addTexture(textures.at(5)->getTextureTypeInfo(), "u_material.roughness");
-		material2->addTexture(textures.at(6)->getTextureTypeInfo(), "u_material.metallic");
-		material2->addTexture(textures.at(7)->getTextureTypeInfo(), "u_material.normal");
-		material->addTexture(textures.at(8)->getTextureTypeInfo(), "u_skybox");
-		material2->addTexture(textures.at(8)->getTextureTypeInfo(), "u_skybox");
+		material->addTexture(texturesPBR.at(0), "u_material.albedo");
+		material->addTexture(texturesPBR.at(1), "u_material.roughness");
+		material->addTexture(texturesPBR.at(2), "u_material.metallic");
+		material->addTexture(texturesPBR.at(3), "u_material.normal");
+		material2->addTexture(texturesPBR.at(4), "u_material.albedo");
+		material2->addTexture(texturesPBR.at(5), "u_material.roughness");
+		material2->addTexture(texturesPBR.at(6), "u_material.metallic");
+		material2->addTexture(texturesPBR.at(7), "u_material.normal");
+		material->addTexture(texturesCube.at(0), "u_skybox");
+		material2->addTexture(texturesCube.at(0), "u_skybox");
 		
 		materialSkybox->setProgram(skyboxProgram);
-		materialSkybox->addTexture(textures.at(8)->getTextureTypeInfo(), "u_skybox");
+		materialSkybox->addTexture(texturesCube.at(0), "u_skybox");
 
 		materialDebugCube->setProgram(skyboxProgram);
 	}
@@ -1332,17 +1254,6 @@ void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMo
 
 	camera.updateView();
 }
-
-// Activating Texture Unit (up to 32 TUs) - just to know on which texture unit is configured
-//void bindTextures(const std::vector<dj::TextureID>& textures)
-//{
-//	static const unsigned int maxTextureUnits = (GL_TEXTURE31 - GL_TEXTURE0);
-//	for (unsigned int i = 0; i < textures.size() && i < maxTextureUnits; ++i)
-//	{
-//		glActiveTexture(GL_TEXTURE0 + i);
-//		glBindTexture(GL_TEXTURE_2D, textures[i]);
-//	}
-//}
 
 void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& lights)
 {

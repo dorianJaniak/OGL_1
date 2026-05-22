@@ -12,7 +12,7 @@ void Material::setProgram(ProgramWeakPtr program)
 	this->program = program;
 }
 
-bool Material::addTexture(const TextureTypeInfo& typeInfo, const std::string& samplerName)
+bool Material::addTexture(const TextureHandle& handle, const std::string& samplerName)
 {
 	bool updated = false;
 	if (!program.expired())
@@ -21,7 +21,7 @@ bool Material::addTexture(const TextureTypeInfo& typeInfo, const std::string& sa
 		if (uniformLocation != -1)
 		{
 			updated = true;
-			textures.push_back({typeInfo, samplerName});
+			textures.push_back({handle, samplerName});
 
 		/*	unsigned int index = getIndex(typeInfo);
 
@@ -56,7 +56,7 @@ unsigned int Material::getTexturesCount() const
 	return static_cast<unsigned int>(textures.size());
 }
 
-const std::vector<TextureBinding>& Material::getTextures() const
+const std::vector<Material::TextureBinding>& Material::getTextures() const
 {
 	return textures;
 }
@@ -71,11 +71,11 @@ ProgramWeakPtr Material::getProgram() const
 	return program;
 }
 
-unsigned int Material::getIndex(const TextureTypeInfo& texInfo) const
+unsigned int Material::getIndex(const TextureHandle& handle) const
 {
 	for (unsigned int i = 0; i < textures.size(); ++i)
 	{
-		if (textures[i].typeInfo == texInfo)
+		if (textures[i].handle == handle)
 			return i;
 	}
 
