@@ -18,7 +18,7 @@ std::optional<TextureHandle> TextureManager::createEmptyTexture(const TextureDes
 	return addTexture(std::move(res), desc, "");
 }
 
-std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps, bool flip)
+std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps, bool flip, bool internalSRGB)
 {
 	TextureData data(path, flip);
 
@@ -41,7 +41,12 @@ std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSampl
 		return std::nullopt;
 	}
 
-	TextureDesc desc;
+	if (sourceColorFormat->inGPUColorFormat == ColorFormatInDevice::RGB && internalSRGB)
+	{
+		sourceColorFormat->inGPUColorFormat = ColorFormatInDevice::SRGB;
+	}
+
+	TextureDesc desc{};
 	desc.glType = TextureType::Texture2D;
 	desc.resolution.width = data.getWidth();
 	desc.resolution.height = data.getHeight();
@@ -62,12 +67,12 @@ std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSampl
 	return addTexture(std::move(res), desc, path);
 }
 
-std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const char* pathSuffixes[6], bool generateMipMaps, bool flip)
+std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const std::array<CubeSideMapping, 6>& pathSuffixes, bool generateMipMaps, bool flip, bool internalSRGB)
 {
 	constexpr unsigned int sidesCount = 6u;
 
-	auto genSidePath = [pathPrefix, pathSuffixes](unsigned int side) {
-		return (std::string(pathPrefix) + std::string(pathSuffixes[side]));
+	auto genSidePath = [pathPrefix, &pathSuffixes](unsigned int side) {
+		return (std::string(pathPrefix) + pathSuffixes[side].suffix);
 	};
 
 	// Load first data to get info
@@ -98,7 +103,12 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 		return std::nullopt;
 	}
 
-	TextureDesc desc;
+	if (sourceColorFormat->inGPUColorFormat == ColorFormatInDevice::RGB && internalSRGB)
+	{
+		sourceColorFormat->inGPUColorFormat = ColorFormatInDevice::SRGB;
+	}
+
+	TextureDesc desc{};
 	desc.glType = TextureType::TextureCube;
 	desc.resolution.width = data.getWidth();
 	desc.resolution.height = data.getHeight();
@@ -110,10 +120,7 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 	res.bind();
 	res.recreate(desc);
 
-	std::optional<TextureCubeSide> sideEnum = toEnum<TextureCubeSide>(0u);
-	assert(sideEnum && "Could not map index to TextureCubeSide");
-
-	res.transferCubeSide(*sideEnum, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
+	res.transferCubeSide(pathSuffixes[0].side, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
 
 	// Load another sides
 	for (unsigned int i = 1u; i < sidesCount; ++i)
@@ -139,16 +146,18 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 			return std::nullopt;
 		}
 
+		if (sourceColorFormat->inGPUColorFormat == ColorFormatInDevice::RGB && internalSRGB)
+		{
+			sourceColorFormat->inGPUColorFormat = ColorFormatInDevice::SRGB;
+		}
+
 		if (*sourceColorFormat != desc.format)
 		{
 			// std::cerr << dj::Log::failPrefix() << "Side: " << i << " has different color format than side 0. Could not load texture: " << pathPrefix << std::endl;
 			return std::nullopt;
 		}
 
-		std::optional<TextureCubeSide> sideEnum = toEnum<TextureCubeSide>(i);
-		assert(sideEnum && "Could not map index to TextureCubeSide");
-
-		res.transferCubeSide(*sideEnum, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
+		res.transferCubeSide(pathSuffixes[i].side, desc.format.sourceColorFormat, desc.format.sourceValueType, data.getData());
 	}
 
 	return addTexture(std::move(res), desc, pathPrefix);
@@ -169,6 +178,17 @@ bool TextureManager::execute(const TextureHandle& handle, std::function<bool(Tex
 	if (exists(handle))
 	{
 		return fun(textures[handle.getIndex()]);
+	}
+
+	return false;
+}
+
+bool TextureManager::bind(const TextureHandle& handle) const
+{
+	if (exists(handle))
+	{
+		textures[handle.getIndex()].bind();
+		return true;
 	}
 
 	return false;
@@ -274,6 +294,17 @@ std::optional<TextureSamplingDesc> TextureManager::getSamplingDesc(const Texture
 	{
 		const TextureResource& tex = textures[handle.getIndex()];
 		return { tex.getDescriptor().sampling };
+	}
+
+	return std::nullopt;
+}
+
+std::optional<GLuint> TextureManager::getID(const TextureHandle& handle) const
+{
+	if (exists(handle))
+	{
+		const TextureResource& tex = textures[handle.getIndex()];
+		return { tex.getID() };
 	}
 
 	return std::nullopt;

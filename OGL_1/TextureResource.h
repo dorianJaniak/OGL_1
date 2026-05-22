@@ -28,7 +28,7 @@ public:
 	TextureResource& operator=(TextureResource&&) noexcept;
 	~TextureResource();
 
-	void bind();
+	void bind() const;
 	void unbind();
 	static void unbindAllTypes();
 
@@ -54,6 +54,10 @@ private:
 	// available only for TextureManager
 	void recreate(const TextureDesc& desc);		// deletes ID, and creates new one
 	void clear();								// deletes ID
+	/*! \todo
+		- Consider other solution to avoid passing OpenGL Texture ID (like RenderBackend class which is declared here as a friend)
+	*/
+	GLuint getID() const;
 
 	// GL updates
 	void setBorderColor();

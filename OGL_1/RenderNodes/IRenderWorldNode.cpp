@@ -3,8 +3,8 @@
 #include "../Program.h"
 using namespace dj;
 
-IRenderWorldNode::IRenderWorldNode(FramebufferPtr output, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name)
-	: IRenderNode(output, name)
+IRenderWorldNode::IRenderWorldNode(const TextureManager& texMgr, FramebufferPtr output, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name)
+	: IRenderNode(texMgr, output, name)
 	, objectInstances(objectInstances)
 	, ebo(ebo)
 	, customMaterial(nullptr)
@@ -80,9 +80,9 @@ void IRenderWorldNode::draw()
 
 void IRenderWorldNode::bindMaterialTextures(ConstProgramPtr program, ConstMaterialPtr material)
 {
-	for (const TextureBinding& tex : material->getTextures())
+	for (const Material::TextureBinding& tex : material->getTextures())
 	{
-		bindAndUniformTexture(tex.typeInfo, program->getUniformLocation(tex.uniformName));
+		bindAndUniformTexture(tex.handle, program->getUniformLocation(tex.uniformName));
 
 		//if (!getFreeTextureUnitsCount())
 		//{

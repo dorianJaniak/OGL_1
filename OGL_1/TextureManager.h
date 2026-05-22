@@ -37,16 +37,23 @@ class TextureManager : public TextureReferencesManager, private NonCopyable, pri
 	std::set<unsigned int> freeSlots;
 
 public:
+	struct CubeSideMapping
+	{
+		TextureCubeSide side;
+		std::string suffix;
+	};
+
 	TextureManager() noexcept = default;
 	~TextureManager() noexcept = default;
 
 	std::optional<TextureHandle> createEmptyTexture(const TextureDesc& desc);
-	std::optional<TextureHandle> create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps = false, bool flip = false);
-	std::optional<TextureHandle> createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const char* pathSuffixes[6], bool generateMipMaps = false, bool flip = false);
+	std::optional<TextureHandle> create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps = false, bool flip = false, bool internalSRGB = false);
+	std::optional<TextureHandle> createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const std::array<CubeSideMapping, 6>& pathSuffixes, bool generateMipMaps = false, bool flip = false, bool internalSRGB = false);
 
 	// Operate on Texture
 	bool check(const TextureHandle& handle, std::function<bool(const TextureResource&)> fun) const;
 	bool execute(const TextureHandle& handle, std::function<bool(TextureResource&)> fun);
+	bool bind(const TextureHandle& handle) const;
 
 	// Get size
 	unsigned int getCount() const;
@@ -64,6 +71,9 @@ public:
 	std::optional<TextureDesc> getDescriptor(const TextureHandle& handle) const;
 	std::optional<ResolutionDesc> getResolution(const TextureHandle& handle) const;
 	std::optional<TextureSamplingDesc> getSamplingDesc(const TextureHandle& handle) const;
+
+	/*! \todo Consider other solution to avoid passing OpenGL Texture ID (like RenderBackend class which would be a friend of TextureResource) */
+	std::optional<GLuint> getID(const TextureHandle& handle) const;
 
 	// Management methods
 	unsigned int getReferencesCount(const TextureHandle& handle) const;

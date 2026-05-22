@@ -35,7 +35,7 @@ public:
 	bool isVisible() const;
 	Type getType() const;
 	const glm::vec3& getPosition() const;
-	const glm::mat3& getRotation() const;
+	const glm::mat3 getRotation() const;
 	const glm::vec3 &getColor() const;
 	float getIntensity() const;
 	float getRange() const;

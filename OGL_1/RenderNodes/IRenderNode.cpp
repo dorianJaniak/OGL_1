@@ -1,6 +1,6 @@
 #include "IRenderNode.h"
-#include "../Texture.h"
 #include "../Program.h"
+#include "TextureManager.h"
 using namespace dj;
 
 void IRenderNode::beginBindingTextures()
@@ -20,7 +20,7 @@ void IRenderNode::restoreTextureUnitNo(unsigned int partIndex)
 	textureUnitNo = textureUnitNoOffsets[partIndex];
 }
 
-bool IRenderNode::bindAndUniformTexture(const TextureTypeInfo& texInfo, GLint uniformLocation)
+bool IRenderNode::bindAndUniformTexture(const TextureHandle& texHandle, GLint uniformLocation)
 {
 	if (textureUnitNo >= c_maxTextureUnitsCount)
 	{
@@ -28,14 +28,14 @@ bool IRenderNode::bindAndUniformTexture(const TextureTypeInfo& texInfo, GLint un
 	}
 
 	glActiveTexture(GL_TEXTURE0 + textureUnitNo);
-	glBindTexture(texInfo.glType, texInfo.id);
+	texMgr.bind(texHandle);
 	glUniform1i(uniformLocation, textureUnitNo);
 	++textureUnitNo;
 
 	return true;
 }
 
-bool IRenderNode::bindTexture(const TextureTypeInfo& texInfo)
+bool IRenderNode::bindTexture(const TextureHandle& texHandle)
 {
 	if (textureUnitNo >= c_maxTextureUnitsCount)
 	{
@@ -43,7 +43,7 @@ bool IRenderNode::bindTexture(const TextureTypeInfo& texInfo)
 	}
 
 	glActiveTexture(GL_TEXTURE0 + textureUnitNo);
-	glBindTexture(texInfo.glType, texInfo.id);
+	texMgr.bind(texHandle);
 
 	++textureUnitNo;
 
@@ -79,8 +79,9 @@ unsigned int IRenderNode::getFreeTextureUnitsCount() const
 	return (textureUnitNo > c_maxTextureUnitsCount ? 0u : c_maxTextureUnitsCount - textureUnitNo);
 }
 
-IRenderNode::IRenderNode(FramebufferPtr output, const std::string& name)
-	: output(output)
+IRenderNode::IRenderNode(const TextureManager& texMgr, FramebufferPtr output, const std::string& name)
+	: texMgr(texMgr)
+	, output(output)
 	, clearFlags(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
 	, depthTestEnabled(true)
 	, depthUpdateEnabled(true)
@@ -124,13 +125,18 @@ void IRenderNode::setConfiguration(GLuint clearFlags, bool depthTestEnabled, boo
 	setFaceCulling(faceCulling);
 }
 
-void IRenderNode::addTexture(const std::string& samplerName, const TextureTypeInfo& typeInfo)
+void IRenderNode::addTexture(const std::string& samplerName, const TextureHandle& texHandle)
 {
-	nodeInputTextures.insert({ samplerName, typeInfo });
+	nodeInputTextures.insert({ samplerName, texHandle });
 }
 
 void IRenderNode::preFrame()
 {
+	// Needs to unbind all texture types, in order to clear Texture state between nodes
+	// Example: Suppose previous Node bound Texture A to Texture Unit #3 (it was last bound texture)
+	//	While in this Node Texture A should be bound to Texture Unit #0 (it is first texture to be bound)
+	//	TextureResource mechanism that protects from rebinding the same texture won't call glBindTexture in this case.
+	TextureResource::unbindAllTypes();
 	output->bind();
 	glViewport(0u, 0u, output->getWidth(), output->getHeight());
 

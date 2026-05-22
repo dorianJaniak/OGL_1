@@ -4,6 +4,11 @@
 
 namespace dj
 {
+class TextureManager;
+} // namespace dj
+
+namespace dj
+{
 
 /*! \class RenderSkyboxWorldNode
 	\brief Node for rendering Skybox Cubemap
@@ -11,7 +16,7 @@ namespace dj
 class RenderSkyboxWorldNode : public IRenderWorldNode, public CameraNodeProperty
 {
 public:
-	RenderSkyboxWorldNode(FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name = "");
+	RenderSkyboxWorldNode(const TextureManager& texMgr, FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name = "");
 
 protected:
 	virtual void uboPerFrame() override;

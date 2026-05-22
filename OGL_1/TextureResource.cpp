@@ -36,7 +36,7 @@ TextureResource::~TextureResource()
 	clear();
 }
 
-void TextureResource::bind()
+void TextureResource::bind() const
 {
 	if (id != globalActiveID)
 	{
@@ -60,6 +60,8 @@ void TextureResource::unbindAllTypes()
 	{
 		::glBindTexture(types[i], 0u);
 	}
+
+	globalActiveID = 0u;
 }
 
 bool TextureResource::nullify()
@@ -235,6 +237,11 @@ void TextureResource::clear()
 	desc = TextureDesc{};
 	id = 0u;
 	borderColor = ColorRGBA{};
+}
+
+GLuint TextureResource::getID() const
+{
+	return id;
 }
 
 void TextureResource::setBorderColor()

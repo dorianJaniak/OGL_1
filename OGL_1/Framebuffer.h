@@ -1,7 +1,14 @@
 #pragma once
 #include "Definitions.h"
+#include "TextureHandle.h"
 #include <GL/glew.h>
 #include <vector>
+#include <optional>
+
+namespace dj
+{
+class TextureManager;
+} // namespace dj
 
 namespace dj
 {
@@ -26,7 +33,7 @@ class Framebuffer
 	struct AttachmentTextureBinding
 	{
 		GLenum attachment;
-		dj::ConstTexturePtr texture;
+		TextureHandle texHandle;
 	};
 
 	GLuint id;
@@ -43,10 +50,11 @@ public:
 
 	/*! \brief Adds new texture attachment to Framebuffer.
 	
-		\param[in] tex Texture attachment (supports: GL_TEXTURE_CUBE_MAP and GL_TEXTURE_2D)
+		\param[in] texMgr needed in order to get Texture descriptor
+		\param[in] tex Handle to texture attachment (supports types: Texture2D and TextureCube)
 		\param[in] attachment Attachment point in FBO (for example: GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT)
 	*/
-	void assignTextureAttachment(const dj::ConstTexturePtr& tex, GLenum attachment);
+	bool assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment);
 	//bool addRenderBufferAttachment(GLenum attachment);
 
 	/*! \brief Adds new Render Buffer Attachment to Framebuffer.
@@ -71,7 +79,7 @@ public:
 		instance. Otherwise, it may receive status of another Framebuffer. 
 	*/
 	static GLenum getFramebufferStatus();
-	dj::ConstTexturePtr getTextureAttachment(GLenum attachment);
+	std::optional<TextureHandle> getTextureAttachment(GLenum attachment);
 	unsigned int getWidth() const;
 	unsigned int getHeight() const;
 };
