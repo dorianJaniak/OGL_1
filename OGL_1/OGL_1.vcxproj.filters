@@ -81,12 +81,6 @@
     <ClCompile Include="TGLTFLoader.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureContainer.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="Framebuffer.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
@@ -188,9 +182,6 @@
     <ClInclude Include="TGLTFLoader.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
     <ClInclude Include="Framebuffer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
@@ -219,9 +210,6 @@
       <Filter>Pliki nagłówkowe\RenderNodes</Filter>
     </ClInclude>
     <ClInclude Include="CameraCube.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureContainer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="MainWindow.h">
