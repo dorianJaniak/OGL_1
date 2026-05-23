@@ -121,7 +121,8 @@ void loadLights(std::vector<dj::LightPtr>& lights);
 bool createShadows(dj::TextureManager& texMgr,
 	const std::vector<dj::LightPtr>& lights,
 	std::vector<dj::LightFramebufferBinding>& spotFBOs,
-	std::vector<dj::LightFramebufferBinding>& pointFBOs);
+	std::vector<dj::LightFramebufferBinding>& pointFBOs,
+	const dj::QualitySettings<4u>& quality);
 bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
 	const std::vector<dj::TextureHandle>& texturesPBR,
@@ -234,7 +235,7 @@ void basicSetupQualitySettings(dj::QualitySettings<4u>& quality)
 	quality.set<dj::EngineQuality::Shadow2DResolution>(std::array{ 2048u, 1024u, 512u, 256u });
 	quality.set<dj::EngineQuality::ShadowCubeResolution>(std::array{ 1024u, 1024u, 512u, 256u });
 	quality.set<dj::EngineQuality::MainFBHighPrecision>(std::array{ true, true, true, false });
-	quality.setActiveLevel(0u);
+	quality.setActiveLevel(1u);
 }
 
 int main()
@@ -347,7 +348,7 @@ int main()
 	glEnableVertexAttribArray(1);
 
 	// STAGE 6 :::: FBO for shadow maps
-	if (!createShadows(texMgr, lights, spotFBOs, pointFBOs))
+	if (!createShadows(texMgr, lights, spotFBOs, pointFBOs, quality))
 	{
 		mw.terminate();
 		return -1;
@@ -1033,9 +1034,11 @@ void loadLights(std::vector<dj::LightPtr>& lights)
 bool createShadows(dj::TextureManager& texMgr, 
 					const std::vector<dj::LightPtr>& lights, 
 					std::vector<dj::LightFramebufferBinding>& spotFBOs,
-					std::vector<dj::LightFramebufferBinding>& pointFBOs)
+					std::vector<dj::LightFramebufferBinding>& pointFBOs,
+					const dj::QualitySettings<4u>& quality)
 {
-	constexpr unsigned int c_shadowRes = 1024u;
+	const unsigned int shadow2DRes = quality.getActive<dj::EngineQuality::Shadow2DResolution>();
+	const unsigned int shadowCubeRes = quality.getActive<dj::EngineQuality::ShadowCubeResolution>();
 	bool ok = true;
 
 	for (dj::LightPtr light : lights)
@@ -1046,8 +1049,8 @@ bool createShadows(dj::TextureManager& texMgr,
 
 			dj::TextureDesc desc{};
 			desc.glType = dj::TextureType::Texture2D;
-			desc.resolution.width = c_shadowRes;
-			desc.resolution.height = c_shadowRes;
+			desc.resolution.width = shadow2DRes;
+			desc.resolution.height = shadow2DRes;
 			desc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
 			desc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
 			desc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
@@ -1091,8 +1094,8 @@ bool createShadows(dj::TextureManager& texMgr,
 
 			dj::TextureDesc desc{};
 			desc.glType = dj::TextureType::TextureCube;
-			desc.resolution.width = c_shadowRes;
-			desc.resolution.height = c_shadowRes;
+			desc.resolution.width = shadowCubeRes;
+			desc.resolution.height = shadowCubeRes;
 			desc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
 			desc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
 			desc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
