@@ -73,7 +73,7 @@ public:
 	}
 
 	template <EngineQuality engineQuality>
-	constexpr auto getActive()
+	constexpr auto getActive() const
 	{
 		return getArray<engineQuality>()[activeLevel];
 	}
@@ -119,6 +119,12 @@ public:
 private:
 	template <EngineQuality engineQuality>
 	constexpr auto& getArray()
+	{
+		return std::get<EngineQualityIndex<engineQuality>::value>(engineQualities);
+	}
+
+	template <EngineQuality engineQuality>
+	constexpr auto& getArray() const
 	{
 		return std::get<EngineQualityIndex<engineQuality>::value>(engineQualities);
 	}
