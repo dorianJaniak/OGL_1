@@ -30,10 +30,7 @@ bool MainWindow::initGLFW(int majorGLVer, int minorGLVer, const char* name)
 		return false;
 	}
 
-	glfwMakeContextCurrent(window);
-	glfwSetWindowUserPointer(window, this);
-	glfwSetFramebufferSizeCallback(window, MainWindow::resizeCallback);
-	//glfwSetScrollCallback(window, userScrollCallback);
+	initCallbacks();
 
 	if (glewInit() != GLEW_OK)
 	{
@@ -57,30 +54,6 @@ void MainWindow::setSize(int width, int height)
 	this->width = width;
 	this->height = height;
 	aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-}
-
-bool MainWindow::setKeyCallback(void (*callback)(GLFWwindow* window, int key, int scancode, int action, int mods))
-{
-	if (window)
-	{
-		glfwSetKeyCallback(window, callback);
-		return true;
-	}
-
-	return false;
-}
-
-bool MainWindow::setCursorPosCallback(void (*callback)(GLFWwindow* window, double xPix, double yPix, double xNorm, double yNorm))
-{
-	if (window)
-	{
-		userCursorPosCallback = callback;
-		glfwSetCursorPosCallback(window, cursorPosCallback);
-
-		return false;
-	}
-
-	return true;
 }
 
 int MainWindow::getWidth() const
@@ -131,13 +104,26 @@ MainWindow* MainWindow::getWindow(GLFWwindow* window)
 	return static_cast<MainWindow*>(glfwGetWindowUserPointer(window));
 }
 
+void MainWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	MainWindow* mw = getWindow(window);
+
+	if (mw)
+	{
+		mw->propagateKeyCallback(key, scancode, action, mods);
+	}
+}
+
 void MainWindow::resizeCallback(GLFWwindow* window, int width, int height)
 {
 	MainWindow* mw = getWindow(window);
 
 	if (mw)
 	{
-		mw->resizeFromExternal(width, height);
+		unsigned int w = (width > 0 ? static_cast<unsigned int>(width) : 0u);
+		unsigned int h = (height > 0 ? static_cast<unsigned int>(height) : 0u);
+		mw->resizeFromExternal(w, h);
+		mw->propagateResizeCallback(w, h);
 	}
 }
 
@@ -147,7 +133,7 @@ void MainWindow::cursorPosCallback(GLFWwindow* window, double xPix, double yPix)
 
 	if (mw)
 	{
-		mw->userCursorPosCallback(window,
+		mw->propagateCursorPosCallback(
 			xPix,
 			yPix,
 			xPix / static_cast<float>(mw->width),
@@ -155,7 +141,17 @@ void MainWindow::cursorPosCallback(GLFWwindow* window, double xPix, double yPix)
 	}
 }
 
-void MainWindow::resizeFromExternal(int width, int height)
+void MainWindow::initCallbacks()
+{
+	glfwMakeContextCurrent(window);
+	glfwSetWindowUserPointer(window, this);
+	glfwSetCursorPosCallback(window, MainWindow::cursorPosCallback);
+	glfwSetKeyCallback(window, MainWindow::keyCallback);
+	glfwSetFramebufferSizeCallback(window, MainWindow::resizeCallback);
+	//glfwSetScrollCallback(window, userScrollCallback);
+}
+
+void MainWindow::resizeFromExternal(unsigned int width, unsigned int height)
 {
 	this->width = width;
 	this->height = height;
