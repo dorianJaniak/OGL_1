@@ -134,6 +134,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp" />
+    <ClCompile Include="Basic3DEnviro\DebugTweaks.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CameraCube.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
@@ -171,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h" />
+    <ClInclude Include="Basic3DEnviro\DebugTweaks.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraCube.h" />
     <ClInclude Include="Definitions.h" />
