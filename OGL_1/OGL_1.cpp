@@ -1,18 +1,9 @@
-﻿
-
-#include <iostream>
-#include <chrono>
-#include <vector>
-#include <map>
-
-#include <GL/glew.h>
+﻿#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
-
-#include <memory>
 
 #include "MainWindow.h"
 #include "QualitySettings.h"
@@ -39,13 +30,14 @@
 #include "EngineKeywords.h"
 #include "Predefinitions\PredefinedShaders.h"
 #include "Predefinitions\PredefinedMeshes.h"
-
 #include "Basic3DEnviro/Basic3DEnviro.h"
 
+#include <iostream>
+#include <chrono>
+#include <vector>
+#include <map>
+#include <memory>
 #include <array>
-
-// IN FUTURE: Approach AZDO
-// TODAY: Single VBO and single VAO
 
 class GlobalSettings
 {
@@ -247,7 +239,6 @@ int main()
 	dj::TimeDrivenMovement tdm;
 
 	dj::TextureManager texMgr;
-	std::optional<dj::TextureHandle> cameraIDs[3];		// Temporary - active cameras
 
 	std::vector<dj::ObjectPtr> objects;
 	std::vector<dj::ObjectInstancePtr> objectInstances;
@@ -256,6 +247,8 @@ int main()
 	std::vector<dj::LightPtr> lights;
 	std::vector<dj::LightFramebufferBinding> spotFBOs;
 	std::vector<dj::LightFramebufferBinding> pointFBOs;
+
+	std::optional<dj::TextureHandle> cameraIDs[3];		// Temporary - active cameras
 	dj::CameraPtr camera = std::make_shared<dj::Camera>();
 
 	//dj::TGLTFLoader tgltfLoader;
