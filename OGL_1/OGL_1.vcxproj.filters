@@ -129,6 +129,15 @@
     <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp">
       <Filter>Pliki źródłowe\Basic3DEnviro</Filter>
     </ClCompile>
+    <ClCompile Include="InputCallback.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="InputSwitchboard.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="Basic3DEnviro\DebugTweaks.cpp">
+      <Filter>Pliki źródłowe\Basic3DEnviro</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextureData.h">
@@ -276,6 +285,15 @@
       <Filter>Pliki nagłówkowe\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h">
+      <Filter>Pliki nagłówkowe\Basic3DEnviro</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSwitchboard.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="InputCallback.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Basic3DEnviro\DebugTweaks.h">
       <Filter>Pliki nagłówkowe\Basic3DEnviro</Filter>
     </ClInclude>
   </ItemGroup>

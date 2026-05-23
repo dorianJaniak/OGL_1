@@ -31,6 +31,7 @@
 #include "Predefinitions\PredefinedShaders.h"
 #include "Predefinitions\PredefinedMeshes.h"
 #include "Basic3DEnviro/Basic3DEnviro.h"
+#include "Basic3DEnviro/DebugTweaks.h"
 
 #include <iostream>
 #include <chrono>
@@ -38,61 +39,6 @@
 #include <map>
 #include <memory>
 #include <array>
-
-class GlobalSettings
-{
-	unsigned int activeCameraIndex;
-	bool gammaCorrection;
-	unsigned int debugVertices;
-
-	GlobalSettings()
-		: activeCameraIndex(0)
-		, gammaCorrection(false)
-		, debugVertices(0u)
-	{
-	}
-
-public:
-	GlobalSettings(const GlobalSettings&) = delete;
-	GlobalSettings(GlobalSettings&&) = delete;
-	void operator=(const GlobalSettings&) = delete;
-
-	static GlobalSettings& getInstance()
-	{
-		static GlobalSettings gs;
-		return gs;
-	}
-
-	unsigned int getActiveCameraIndex() const
-	{
-		return activeCameraIndex;
-	}
-
-	bool isGammaCorrected() const
-	{
-		return gammaCorrection;
-	}
-
-	unsigned int getDebugVertices() const
-	{
-		return debugVertices;
-	}
-
-	void changeCamera()
-	{
-		activeCameraIndex = (activeCameraIndex + 1u) % 4u;
-	}
-
-	void switchGammaCorrection()
-	{
-		gammaCorrection = !gammaCorrection;
-	}
-
-	void switchDebugVertices()
-	{
-		debugVertices = (debugVertices + 1u) % 4u;
-	}
-};
 
 // Helpers - Loaders
 bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
@@ -134,11 +80,6 @@ void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& ligh
 bool checkFramebufferStatus(GLenum status);
 bool verifyFramebufferStatus(GLenum status);
 void reportFPS();
-
-// Helpers - Callbacks
-void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void userCursorCallback(GLFWwindow* window, double xPix, double yPix, double xNorm, double yNorm);
-void userScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Helpers - Render
 void renderWorldForDepthTest(std::vector<dj::ObjectInstancePtr>& instances, dj::ProgramPtr program);
@@ -235,7 +176,7 @@ int main()
 	dj::QualitySettings<4u> quality;
 	basicSetupQualitySettings(quality);
 
-	const GlobalSettings &gs = GlobalSettings::getInstance();
+	std::shared_ptr<dj::DebugTweaks> dt = std::make_shared<dj::DebugTweaks>();
 	dj::TimeDrivenMovement tdm;
 
 	dj::TextureManager texMgr;
@@ -260,9 +201,7 @@ int main()
 	{
 		return -1;
 	}
-
-	mw.setKeyCallback(userInputCallback);
-	mw.setCursorPosCallback(userCursorCallback);
+	mw.addCallback(dt);
 
 	// STAGE 2 :::: Shader Programs Creation
 	// Loads, compiles and links shaders and generates Program ID
@@ -552,7 +491,7 @@ int main()
 		}
 
 		// Stage 9.3.2 :::: Render Debug Cubemap
-		if (gs.getActiveCameraIndex() == 3u)
+		if (dt->getActiveCameraIndex() == 3u)
 		{
 			std::optional<dj::TextureHandle> shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
 			if (shTex)
@@ -579,19 +518,19 @@ int main()
 
 			// Stage 9.3.3.3 :::: Render Debug Edges
 			glDepthFunc(GL_LESS);
-			if (gs.getDebugVertices())
+			if (dt->getDebugVertices())
 			{
 				assert(enginePrograms.size() >= 5);
 				dj::ProgramPtr programDebugMesh = enginePrograms.at(dj::EngineProgramID::debugMesh);
 				programDebugMesh->use();
 				glUniform1f(programDebugMesh->getUniformLocation("u_axisLength"), 0.3f);
-				glUniform1ui(programDebugMesh->getUniformLocation("u_debugSelection"), gs.getDebugVertices());
+				glUniform1ui(programDebugMesh->getUniformLocation("u_debugSelection"), dt->getDebugVertices());
 				renderWorldSingleProgram(objectInstances, programDebugMesh, *camera);
 			}
 		}
 
 		// Stage 9.3.4 :::: Draw Main FBO
-		if (gs.isGammaCorrected())
+		if (dt->isGammaCorrected())
 		{
 			glEnable(GL_FRAMEBUFFER_SRGB);
 		}
@@ -603,7 +542,7 @@ int main()
 		glDisable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE11);
 
-		if (gs.getActiveCameraIndex() == 3u)
+		if (dt->getActiveCameraIndex() == 3u)
 		{
 			if (cameraIDs[0u])
 			{
@@ -612,9 +551,9 @@ int main()
 		}
 		else
 		{
-			if (cameraIDs[gs.getActiveCameraIndex()])
+			if (cameraIDs[dt->getActiveCameraIndex()])
 			{
-				texMgr.bind(*cameraIDs[gs.getActiveCameraIndex()]);
+				texMgr.bind(*cameraIDs[dt->getActiveCameraIndex()]);
 			}
 		}
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -1337,30 +1276,4 @@ void reportFPS()
 	}
 
 	frameNo++;
-}
-
-void userInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
-	{
-		GlobalSettings::getInstance().changeCamera();
-	}
-	if (key == GLFW_KEY_G && action == GLFW_PRESS)
-	{
-		GlobalSettings::getInstance().switchGammaCorrection();
-	}
-	if (key == GLFW_KEY_V && action == GLFW_PRESS)
-	{
-		GlobalSettings::getInstance().switchDebugVertices();
-	}
-}
-
-void userCursorCallback(GLFWwindow* window, double xPix, double yPix, double xNorm, double yNorm)
-{
-	//std::cout << "Cursor position - x: " << xpos << ", y: " << ypos << std::endl;
-}
-
-void userScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
-{
-	//std::cout << "Scroll offset: " << xoffset << ", " << yoffset << std::endl;
 }

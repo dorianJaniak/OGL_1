@@ -134,9 +134,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Basic3DEnviro\Basic3DEnviro.cpp" />
+    <ClCompile Include="Basic3DEnviro\DebugTweaks.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CameraCube.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
+    <ClCompile Include="InputCallback.cpp" />
+    <ClCompile Include="InputSwitchboard.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="Material.cpp" />
@@ -169,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h" />
+    <ClInclude Include="Basic3DEnviro\DebugTweaks.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraCube.h" />
     <ClInclude Include="Definitions.h" />
@@ -187,6 +191,8 @@
     <ClInclude Include="Enums\TextureParameterEnums.h" />
     <ClInclude Include="Enums\Utils.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="InputCallback.h" />
+    <ClInclude Include="InputSwitchboard.h" />
     <ClInclude Include="Perspective.h" />
     <ClInclude Include="QualitySettings.h" />
     <ClInclude Include="Light.h" />
