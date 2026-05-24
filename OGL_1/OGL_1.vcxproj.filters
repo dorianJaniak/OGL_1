@@ -37,6 +37,12 @@
     <Filter Include="Pliki źródłowe\Basic3DEnviro">
       <UniqueIdentifier>{4e65c145-40d5-42ca-9ac4-be4af07c6add}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Pliki nagłówkowe\Time">
+      <UniqueIdentifier>{1f44d4b1-3f57-43ec-8720-e38fe96df40a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\Time">
+      <UniqueIdentifier>{c319dd67-291f-46d1-833a-81198bfd6b9c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OGL_1.cpp">
@@ -73,9 +79,6 @@
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="ShadowFramebuffer.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="TimeDrivenMovement.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="TGLTFLoader.cpp">
@@ -138,6 +141,9 @@
     <ClCompile Include="Basic3DEnviro\DebugTweaks.cpp">
       <Filter>Pliki źródłowe\Basic3DEnviro</Filter>
     </ClCompile>
+    <ClCompile Include="Time\TimeDrivenMovement.cpp">
+      <Filter>Pliki źródłowe\Time</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextureData.h">
@@ -183,9 +189,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="ShadowFramebuffer.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="TimeDrivenMovement.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="TGLTFLoader.h">
@@ -295,6 +298,18 @@
     </ClInclude>
     <ClInclude Include="Basic3DEnviro\DebugTweaks.h">
       <Filter>Pliki nagłówkowe\Basic3DEnviro</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\OccurrenceFrequency.h">
+      <Filter>Pliki nagłówkowe\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\TimeDrivenMovement.h">
+      <Filter>Pliki nagłówkowe\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\PerFrameUpdates.h">
+      <Filter>Pliki nagłówkowe\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\TimeFlow.h">
+      <Filter>Pliki nagłówkowe\Time</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

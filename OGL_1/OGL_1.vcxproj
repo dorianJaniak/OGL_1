@@ -167,7 +167,7 @@
     <ClCompile Include="TextureReferencesManager.cpp" />
     <ClCompile Include="TextureResource.cpp" />
     <ClCompile Include="TGLTFLoader.cpp" />
-    <ClCompile Include="TimeDrivenMovement.cpp" />
+    <ClCompile Include="Time\TimeDrivenMovement.cpp" />
     <ClCompile Include="Utils\GLWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -219,7 +219,10 @@
     <ClInclude Include="TextureReferencesManager.h" />
     <ClInclude Include="TextureResource.h" />
     <ClInclude Include="TGLTFLoader.h" />
-    <ClInclude Include="TimeDrivenMovement.h" />
+    <ClInclude Include="Time\OccurrenceFrequency.h" />
+    <ClInclude Include="Time\PerFrameUpdates.h" />
+    <ClInclude Include="Time\TimeDrivenMovement.h" />
+    <ClInclude Include="Time\TimeFlow.h" />
     <ClInclude Include="UniformNames.h" />
     <ClInclude Include="Utils\GLWrapper.h" />
     <ClInclude Include="Utils\NonCopyableNonMovable.h" />
