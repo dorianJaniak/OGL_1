@@ -123,10 +123,15 @@ public:
 		return expired;
 	}
 
-	unsigned int expirationCount()
+	T timePassed() const
 	{
 		const auto now = std::chrono::steady_clock::now();
-		unsigned int expirationCount = static_cast<unsigned int>(std::chrono::duration_cast<T>(now - fromTime) / period);
+		return std::chrono::duration_cast<T>(now - fromTime);
+	}
+
+	unsigned int expirationCount()
+	{
+		unsigned int expirationCount = static_cast<unsigned int>(timePassed() / period);
 		expired = (expirationCount > 0u);
 		return expirationCount;
 	}

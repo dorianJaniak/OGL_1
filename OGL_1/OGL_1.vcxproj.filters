@@ -138,6 +138,9 @@
     <ClCompile Include="Basic3DEnviro\DebugTweaks.cpp">
       <Filter>Pliki źródłowe\Basic3DEnviro</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\OccurrenceFrequency.cpp">
+      <Filter>Pliki źródłowe\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextureData.h">
@@ -295,6 +298,9 @@
     </ClInclude>
     <ClInclude Include="Basic3DEnviro\DebugTweaks.h">
       <Filter>Pliki nagłówkowe\Basic3DEnviro</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\OccurrenceFrequency.h">
+      <Filter>Pliki nagłówkowe\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

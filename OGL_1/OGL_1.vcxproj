@@ -168,6 +168,7 @@
     <ClCompile Include="TextureResource.cpp" />
     <ClCompile Include="TGLTFLoader.cpp" />
     <ClCompile Include="TimeDrivenMovement.cpp" />
+    <ClCompile Include="Utils\OccurrenceFrequency.cpp" />
     <ClCompile Include="Utils\GLWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -221,6 +222,7 @@
     <ClInclude Include="TGLTFLoader.h" />
     <ClInclude Include="TimeDrivenMovement.h" />
     <ClInclude Include="UniformNames.h" />
+    <ClInclude Include="Utils\OccurrenceFrequency.h" />
     <ClInclude Include="Utils\GLWrapper.h" />
     <ClInclude Include="Utils\NonCopyableNonMovable.h" />
   </ItemGroup>

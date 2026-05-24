@@ -32,6 +32,7 @@
 #include "Predefinitions\PredefinedMeshes.h"
 #include "Basic3DEnviro/Basic3DEnviro.h"
 #include "Basic3DEnviro/DebugTweaks.h"
+#include "Utils/OccurrenceFrequency.h"
 
 #include <iostream>
 #include <chrono>
@@ -73,13 +74,12 @@ void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMo
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
 
 // Helpers - Bindings
-//void bindTextures(const std::vector<dj::TextureID>& textures);
 void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& lights);
 
 // Helpers - Debug
 bool checkFramebufferStatus(GLenum status);
 bool verifyFramebufferStatus(GLenum status);
-void reportFPS();
+void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period);
 
 // Helpers - Render
 void renderWorldForDepthTest(std::vector<dj::ObjectInstancePtr>& instances, dj::ProgramPtr program);
@@ -392,12 +392,15 @@ int main()
 	dj::RenderSkyboxWorldNode cubeMapDebugNode{ texMgr, fbo, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
 	cubeMapDebugNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
 
+	dj::OccurrenceFrequency fps(std::chrono::milliseconds(5000u));
+	fps.setReportCallback(reportFPSCallback);
+	fps.start();
 
 	// STAGE 9 :::: Render Loop
 	while (!mw.getShouldClose())
 	{
 		// STAGE 9.1 :::: Internal logging
-		reportFPS();
+		fps.increment();
 		tdm.nextFrame();
 
 		// STAGE 9.2 :::: Update
@@ -1263,17 +1266,8 @@ bool verifyFramebufferStatus(GLenum status)
 	return true;
 }
 
-void reportFPS()
+void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period)
 {
-	static dj::TimeFlow<std::chrono::seconds> tf(std::chrono::seconds(5));
-	static unsigned int frameNo = 0;
-
-	if (tf.expirationCount())
-	{
-		tf.startFromLastPeriod();
-		std::cout << "FPS: " << (frameNo / 5) << std::endl;
-		frameNo = 0;
-	}
-
-	frameNo++;
+	float fps = static_cast<float>(framesCount) / (static_cast<float>(period.count()) / 1000.0f);
+	std::cout << "FPS: " << static_cast<unsigned int>(fps) << std::endl;
 }
