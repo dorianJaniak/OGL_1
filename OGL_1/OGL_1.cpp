@@ -74,9 +74,6 @@ void manualObjectsTransformations(std::vector<dj::ObjectInstancePtr>& instances,
 void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMovement& tdm);
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
 
-// Helpers - Bindings
-void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& lights);
-
 // Helpers - Debug
 bool checkFramebufferStatus(GLenum status);
 bool verifyFramebufferStatus(GLenum status);
@@ -1192,41 +1189,6 @@ void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMo
 	}
 
 	camera.updateView();
-}
-
-void uniformLights(dj::ProgramPtr program, const std::vector<dj::LightPtr>& lights)
-{
-	for (unsigned int i = 0; i < lights.size(); ++i)
-	{
-		const std::string lightName = std::string("u_light[") + std::to_string(i) + std::string("].");
-		std::string posName = lightName + std::string("pos");
-		std::string colorName = lightName + std::string("color");
-		std::string rangeName = lightName + std::string("range");
-		std::string typeName = lightName + std::string("type");
-		std::string dirName = lightName + std::string("dir");
-		std::string spotExtCosName = lightName + std::string("spotExtCos");
-		std::string spotIntCosName = lightName + std::string("spotIntCos");
-		std::string shadowActiveName = lightName + std::string("shadowActive");
-
-		glUniform3fv(program->getUniformLocation(posName.c_str()), 1, glm::value_ptr(lights[i]->getPosition()));
-		glUniform3fv(program->getUniformLocation(colorName.c_str()), 1, glm::value_ptr(lights[i]->getColor() * lights[i]->getIntensity()));
-		glUniform1f(program->getUniformLocation(rangeName.c_str()), lights[i]->getRange());
-		glUniform1ui(program->getUniformLocation(typeName.c_str()), static_cast<GLuint>(lights[i]->getType()));
-		glUniform1i(program->getUniformLocation(shadowActiveName.c_str()), (lights[i]->isShadowActive() ? 1 : 0));
-		
-		if (lights[i]->getType() != dj::Light::Type::Point)
-		{
-			glUniform3fv(program->getUniformLocation(dirName.c_str()), 1, glm::value_ptr(lights[i]->getDirectionVector()));
-
-			if (lights[i]->getType() == dj::Light::Type::Spot)
-			{
-				glUniform1f(program->getUniformLocation(spotExtCosName.c_str()), glm::cos(glm::radians(lights[i]->getSpotlightAngle() / 2.0f)));
-				glUniform1f(program->getUniformLocation(spotIntCosName.c_str()), glm::cos(glm::radians(lights[i]->getSpotlightInternalAngle() / 2.0f)));
-			}
-		}
-	}
-
-	glUniform1ui(program->getUniformLocation("u_lightsCount"), static_cast<GLuint>(lights.size()));
 }
 
 bool checkFramebufferStatus(GLenum framebufferFlag)
