@@ -32,7 +32,7 @@
 #include "Predefinitions\PredefinedMeshes.h"
 #include "Basic3DEnviro/Basic3DEnviro.h"
 #include "Basic3DEnviro/DebugTweaks.h"
-#include "Utils/OccurrenceFrequency.h"
+#include "Time/OccurrenceFrequency.h"
 
 #include <iostream>
 #include <chrono>
