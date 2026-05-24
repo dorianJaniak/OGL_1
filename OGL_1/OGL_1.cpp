@@ -24,7 +24,6 @@
 #include "Light.h"
 #include "ShadowFramebuffer.h"
 #include "Framebuffer.h"
-#include "TimeDrivenMovement.h"
 #include "TGLTFLoader.h"
 #include "DefinitionsGL.h"
 #include "EngineKeywords.h"
@@ -32,6 +31,8 @@
 #include "Predefinitions\PredefinedMeshes.h"
 #include "Basic3DEnviro/Basic3DEnviro.h"
 #include "Basic3DEnviro/DebugTweaks.h"
+#include "Time/TimeDrivenMovement.h"
+#include "Time/PerFrameUpdates.h"
 #include "Time/OccurrenceFrequency.h"
 
 #include <iostream>
