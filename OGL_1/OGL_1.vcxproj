@@ -189,7 +189,6 @@
     <ClInclude Include="Enums\TextureParameterEnums.h" />
     <ClInclude Include="Enums\Utils.h" />
     <ClInclude Include="Framebuffer.h" />
-    <ClInclude Include="ResourceType.h" />
     <ClInclude Include="InputCallback.h" />
     <ClInclude Include="InputSwitchboard.h" />
     <ClInclude Include="Perspective.h" />

@@ -3,7 +3,7 @@
 
 namespace dj
 {
-
-using TextureHandle = Handle<ResourceType::Texture>;
+class TextureManager;
+using TextureHandle = Handle<TextureManager>;
 
 } // namespace dj

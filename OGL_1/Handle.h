@@ -1,47 +1,44 @@
 #pragma once
-#include "ResourceType.h"
 #include "ReferencesManager.h"
 #include <cassert>
 
 namespace dj
 {
 
-class TextureManager;
-
-template <ResourceType resourceType>
+template <class ResourceManager>
 class ReferencesManager;
 
-template <ResourceType resourceType>
+template <class ResourceManager>
 class HandleCreator;
 
-template <ResourceType resourceType>
+template <class ResourceManager>
 class Handle;
+
 } // namespace dj
 
 namespace dj
 {
 
-template <ResourceType resourceType>
+template <class ResourceManager>
 class HandleCreator
 {
 protected:
-	Handle<resourceType> createHandle(ReferencesManager<resourceType>* manager, unsigned int index, unsigned int generation)
+	Handle<ResourceManager> createHandle(ReferencesManager<ResourceManager>* manager, unsigned int index, unsigned int generation)
 	{
 		return { manager, index, generation };
 	}
 };
 
-
 /*! \class Handle
 * \todo Join index and generation to uint32_t
 * \todo Consider if it should set Index to max (it is not safe to use assert in case of std::move). Should I set manager to nullptr?
 */
-template <ResourceType resourceType>
+template <class ResourceManager>
 class Handle
 {
-	friend class HandleCreator<resourceType>;
+	friend class HandleCreator<ResourceManager>;
 
-	ReferencesManager<resourceType>* manager{ nullptr };
+	ReferencesManager<ResourceManager>* manager{ nullptr };
 	unsigned int index{ 0u };
 	unsigned int generation{ 0u };
 
@@ -54,7 +51,7 @@ public:
 		, index(handle.index)
 		, generation(handle.generation)
 	{
-		assert(manager && "Pointer to TextureManager is nullptr");
+		assert(manager && "Pointer to Resource Manager is nullptr");
 		manager->addRef(handle);
 	}
 
@@ -74,7 +71,7 @@ public:
 		generation = handle.generation;
 		manager = handle.manager;
 
-		assert(manager && "Pointer to TextureManager is nullptr");
+		assert(manager && "Pointer to Resource Manager is nullptr");
 		manager->addRef(handle);
 
 		return *this;
@@ -118,13 +115,13 @@ public:
 	}
 
 private:
-	// accessible only for TextureManager
-	Handle(ReferencesManager<resourceType>* manager, unsigned int index, unsigned int generation)
+	// accessible only for ResourceManager
+	Handle(ReferencesManager<ResourceManager>* manager, unsigned int index, unsigned int generation)
 		: manager(manager)
 		, index(index)
 		, generation(generation)
 	{
-		assert(manager && "Pointer to TextureManager is nullptr");
+		assert(manager && "Pointer to Resource Manager is nullptr");
 		manager->addRef(*this);
 	}
 };

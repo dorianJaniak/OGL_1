@@ -1,10 +1,9 @@
 #pragma once
-#include "ResourceType.h"
 #include <vector>
 
 namespace dj
 {
-template <ResourceType resourceType>
+template <class ResourceManager>
 class Handle;
 }
 
@@ -14,16 +13,16 @@ namespace dj
 /*! \class ReferencesManager
 * \todo consider removing "friend Handle"
 */
-template <ResourceType resourceType>
+template <class ResourceManager>
 class ReferencesManager
 {
-	friend class Handle<resourceType>;
+	friend class Handle<ResourceManager>;
 
 protected:
 	std::vector<unsigned int> referencesCount;
 	std::vector<unsigned int> generations;
 
-	void addRef(const Handle<resourceType>& h)
+	void addRef(const Handle<ResourceManager>& h)
 	{
 		if (h.getIndex() < referencesCount.size()
 			&& h.getGeneration() == generations[h.getIndex()])
@@ -32,7 +31,7 @@ protected:
 		}
 	}
 
-	void removeRef(const Handle<resourceType>& h)
+	void removeRef(const Handle<ResourceManager>& h)
 	{
 		if (h.getIndex() < referencesCount.size()
 			&& h.getGeneration() == generations[h.getIndex()])
