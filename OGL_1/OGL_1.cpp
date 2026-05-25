@@ -46,9 +46,9 @@
 bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
 bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
 
-bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTextures, std::vector<dj::Handle>& skyboxTextures);
-bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTextures, const char* path, const char* extension);
-bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::Handle>& cubeTextures, const char* path, const char* extension);
+bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures);
+bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension);
+bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension);
 
 void configureRasterization();
 void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects);
@@ -65,8 +65,8 @@ bool createShadows(dj::TextureManager& texMgr,
 	const dj::QualitySettings<4u>& quality);
 bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
-	const std::vector<dj::Handle>& texturesPBR,
-	const std::vector<dj::Handle>& texturesCube);
+	const std::vector<dj::TextureHandle>& texturesPBR,
+	const std::vector<dj::TextureHandle>& texturesCube);
 
 // Helpers - Transformations
 void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances);
@@ -187,7 +187,7 @@ int main()
 	std::vector<dj::LightFramebufferBinding> spotFBOs;
 	std::vector<dj::LightFramebufferBinding> pointFBOs;
 
-	std::optional<dj::Handle> cameraIDs[3];		// Temporary - active cameras
+	std::optional<dj::TextureHandle> cameraIDs[3];		// Temporary - active cameras
 	dj::CameraPtr camera = std::make_shared<dj::Camera>();
 
 	//dj::TGLTFLoader tgltfLoader;
@@ -244,7 +244,7 @@ int main()
 		desc.format.sourceColorFormat = dj::ColorFormatInSource::RGB;
 		desc.format.sourceValueType = dj::PixelDataTypeInSource::UnsignedByte;
 
-		std::optional<dj::Handle> fboTexture = texMgr.createEmptyTexture(desc);
+		std::optional<dj::TextureHandle> fboTexture = texMgr.createEmptyTexture(desc);
 
 		if (!fboTexture)
 		{
@@ -315,8 +315,8 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData.getIndicesDataSize(), &meshData.getAllIndices()[0], GL_STATIC_DRAW);
 
 	// STAGE 7 :::: Materials Creation
-	std::vector<dj::Handle> pbrTextures;
-	std::vector<dj::Handle> skyboxTextures;
+	std::vector<dj::TextureHandle> pbrTextures;
+	std::vector<dj::TextureHandle> skyboxTextures;
 
 	if (!loadTextures(texMgr, pbrTextures, skyboxTextures))
 	{
@@ -494,7 +494,7 @@ int main()
 		// Stage 9.3.2 :::: Render Debug Cubemap
 		if (dt->getActiveCameraIndex() == 3u)
 		{
-			std::optional<dj::Handle> shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
+			std::optional<dj::TextureHandle> shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
 			if (shTex)
 			{
 				cubeMapDebugNode.addTexture("u_skybox", *shTex);
@@ -787,7 +787,7 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 	return true;
 }
 
-bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTextures, std::vector<dj::Handle>& skyboxTextures)
+bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures)
 {
 	static const unsigned int& texsCount = dj_basicEnviro::pbrMaterialsCount;
 	static const auto& texPaths = dj_basicEnviro::pbrMaterialPaths;
@@ -816,7 +816,7 @@ bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTextur
 	return true;
 }
 
-bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTextures, const char* path, const char* extension)
+bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension)
 {
 	static const std::string normalSuffix = "normal-ogl";
 	static const std::array<std::string, 4> suffixes = {
@@ -831,7 +831,7 @@ bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTex
 	{
 		const std::string fullPath = path + suffix + extension;
 		bool allowSRGB = (suffix != normalSuffix);
-		std::optional<dj::Handle> handle = texMgr.create2DFromFile(sampling, fullPath.c_str(), true, true, allowSRGB);
+		std::optional<dj::TextureHandle> handle = texMgr.create2DFromFile(sampling, fullPath.c_str(), true, true, allowSRGB);
 
 		if (!handle)
 		{
@@ -845,7 +845,7 @@ bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::Handle>& pbrTex
 	return true;
 }
 
-bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::Handle>& cubeTextures, const char* path, const char* extension)
+bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension)
 {
 	static const dj::TextureSamplingDesc& sampling = dj::getTextureSamplingDescDefaultsForCube();
 	const std::array<dj::TextureManager::CubeSideMapping, 6u> suffixesMapping{ {
@@ -857,7 +857,7 @@ bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::Handle>& cubeTe
 		{dj::TextureCubeSide::NegativeZ, std::string("back") + std::string(extension)}
 	} };
 
-	std::optional<dj::Handle> handle = texMgr.createCubeMapFromFile(sampling, path, suffixesMapping, false, false, true);
+	std::optional<dj::TextureHandle> handle = texMgr.createCubeMapFromFile(sampling, path, suffixesMapping, false, false, true);
 	if (!handle)
 	{
 		std::cerr << dj::Log::failPrefix() << "Could not load cubemap: " << path << std::endl;
@@ -993,7 +993,7 @@ bool createShadows(dj::TextureManager& texMgr,
 			desc.sampling.wrapT = dj::TextureWrapping::ClampToBorder;
 			desc.mipmaps = false;
 
-			std::optional<dj::Handle> handle = texMgr.createEmptyTexture(desc);
+			std::optional<dj::TextureHandle> handle = texMgr.createEmptyTexture(desc);
 			if (!handle)
 			{
 				std::cerr << dj::Log::failPrefix() << "Could not create texture for Spotlight\n";
@@ -1039,7 +1039,7 @@ bool createShadows(dj::TextureManager& texMgr,
 			desc.sampling.wrapR = dj::TextureWrapping::ClampToEdge;
 			desc.mipmaps = false;
 
-			std::optional<dj::Handle> handle = texMgr.createEmptyTexture(desc);
+			std::optional<dj::TextureHandle> handle = texMgr.createEmptyTexture(desc);
 			if (!handle)
 			{
 				std::cerr << dj::Log::failPrefix() << "Could not create texture for Pointlight\n";
@@ -1063,8 +1063,8 @@ bool createShadows(dj::TextureManager& texMgr,
 
 bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
-	const std::vector<dj::Handle>& texturesPBR,
-	const std::vector<dj::Handle>& texturesCube)
+	const std::vector<dj::TextureHandle>& texturesPBR,
+	const std::vector<dj::TextureHandle>& texturesCube)
 {
 
 	assert(texturesPBR.size() >= 8u && "Too few textures in texturesPBR");

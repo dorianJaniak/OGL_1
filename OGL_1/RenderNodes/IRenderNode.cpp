@@ -20,7 +20,7 @@ void IRenderNode::restoreTextureUnitNo(unsigned int partIndex)
 	textureUnitNo = textureUnitNoOffsets[partIndex];
 }
 
-bool IRenderNode::bindAndUniformTexture(const Handle& texHandle, GLint uniformLocation)
+bool IRenderNode::bindAndUniformTexture(const TextureHandle& texHandle, GLint uniformLocation)
 {
 	if (textureUnitNo >= c_maxTextureUnitsCount)
 	{
@@ -35,7 +35,7 @@ bool IRenderNode::bindAndUniformTexture(const Handle& texHandle, GLint uniformLo
 	return true;
 }
 
-bool IRenderNode::bindTexture(const Handle& texHandle)
+bool IRenderNode::bindTexture(const TextureHandle& texHandle)
 {
 	if (textureUnitNo >= c_maxTextureUnitsCount)
 	{
@@ -125,7 +125,7 @@ void IRenderNode::setConfiguration(GLuint clearFlags, bool depthTestEnabled, boo
 	setFaceCulling(faceCulling);
 }
 
-void IRenderNode::addTexture(const std::string& samplerName, const Handle& texHandle)
+void IRenderNode::addTexture(const std::string& samplerName, const TextureHandle& texHandle)
 {
 	nodeInputTextures.insert({ samplerName, texHandle });
 }

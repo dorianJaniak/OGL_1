@@ -162,9 +162,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShadowFramebuffer.cpp" />
     <ClCompile Include="TextureData.cpp" />
-    <ClCompile Include="Handle.cpp" />
     <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="ReferencesManager.cpp" />
     <ClCompile Include="TextureResource.cpp" />
     <ClCompile Include="TGLTFLoader.cpp" />
     <ClCompile Include="Time\TimeDrivenMovement.cpp" />
@@ -191,6 +189,7 @@
     <ClInclude Include="Enums\TextureParameterEnums.h" />
     <ClInclude Include="Enums\Utils.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="ResourceType.h" />
     <ClInclude Include="InputCallback.h" />
     <ClInclude Include="InputSwitchboard.h" />
     <ClInclude Include="Perspective.h" />
@@ -215,6 +214,7 @@
     <ClInclude Include="ShadowFramebuffer.h" />
     <ClInclude Include="TextureData.h" />
     <ClInclude Include="Handle.h" />
+    <ClInclude Include="TextureHandle.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="ReferencesManager.h" />
     <ClInclude Include="TextureResource.h" />

@@ -2,7 +2,7 @@
 
 #include "Definitions.h"
 #include "DefinitionsGL.h"
-#include "Handle.h"
+#include "TextureHandle.h"
 #include <GL/glew.h>
 #include <string>
 #include <vector>
@@ -33,7 +33,7 @@ class Material
 public:
 	struct TextureBinding
 	{
-		Handle handle;
+		TextureHandle handle;
 		std::string uniformName;
 	};
 
@@ -62,7 +62,7 @@ public:
 	*	\param[in] samplerName name of the sampler in the \ref Program
 	*	\return true if successfull, false if Program does not exist or if could not locate Uniform ID
 	*/
-	bool addTexture(const Handle& handle, const std::string& samplerName);
+	bool addTexture(const TextureHandle& handle, const std::string& samplerName);
 	
 	unsigned int getTexturesCount() const;
 	const std::vector<TextureBinding>& getTextures() const;
@@ -70,7 +70,7 @@ public:
 	ProgramWeakPtr getProgram() const;
 
 private:
-	unsigned int getIndex(const Handle& handle) const;
+	unsigned int getIndex(const TextureHandle& handle) const;
 };
 
 } // namespace dj

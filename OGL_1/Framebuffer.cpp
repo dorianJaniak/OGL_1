@@ -27,7 +27,7 @@ Framebuffer::~Framebuffer()
 	std::cout << "Framebuffer destructed\n";
 }
 
-bool Framebuffer::assignTextureAttachment(const TextureManager& texMgr, const Handle& handle, GLenum attachment)
+bool Framebuffer::assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment)
 {
 	const std::optional<GLuint> texID = texMgr.getID(handle);
 	if (!texID)
@@ -89,7 +89,7 @@ GLenum Framebuffer::getFramebufferStatus()
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER);
 }
 
-std::optional<Handle> Framebuffer::getTextureAttachment(GLenum attachment)
+std::optional<TextureHandle> Framebuffer::getTextureAttachment(GLenum attachment)
 {
 	for (const AttachmentTextureBinding& attachmentBinding : textures)
 	{

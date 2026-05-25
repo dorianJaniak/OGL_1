@@ -3,7 +3,7 @@
 #include "Enums/Converters.h"
 using namespace dj;
 
-std::optional<Handle> TextureManager::createEmptyTexture(const TextureDesc& desc)
+std::optional<TextureHandle> TextureManager::createEmptyTexture(const TextureDesc& desc)
 {
 	if (desc.resolution.width == 0u || desc.resolution.height == 0u)
 	{
@@ -18,7 +18,7 @@ std::optional<Handle> TextureManager::createEmptyTexture(const TextureDesc& desc
 	return addTexture(std::move(res), desc, "");
 }
 
-std::optional<Handle> TextureManager::create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps, bool flip, bool internalSRGB)
+std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps, bool flip, bool internalSRGB)
 {
 	TextureData data(path, flip);
 
@@ -67,7 +67,7 @@ std::optional<Handle> TextureManager::create2DFromFile(const TextureSamplingDesc
 	return addTexture(std::move(res), desc, path);
 }
 
-std::optional<Handle> TextureManager::createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const std::array<CubeSideMapping, 6>& pathSuffixes, bool generateMipMaps, bool flip, bool internalSRGB)
+std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const std::array<CubeSideMapping, 6>& pathSuffixes, bool generateMipMaps, bool flip, bool internalSRGB)
 {
 	constexpr unsigned int sidesCount = 6u;
 
@@ -163,7 +163,7 @@ std::optional<Handle> TextureManager::createCubeMapFromFile(const TextureSamplin
 	return addTexture(std::move(res), desc, pathPrefix);
 }
 
-bool TextureManager::check(const Handle& handle, std::function<bool(const TextureResource&)> fun) const
+bool TextureManager::check(const TextureHandle& handle, std::function<bool(const TextureResource&)> fun) const
 {
 	if (exists(handle))
 	{
@@ -173,7 +173,7 @@ bool TextureManager::check(const Handle& handle, std::function<bool(const Textur
 	return false;
 }
 
-bool TextureManager::execute(const Handle& handle, std::function<bool(TextureResource&)> fun)
+bool TextureManager::execute(const TextureHandle& handle, std::function<bool(TextureResource&)> fun)
 {
 	if (exists(handle))
 	{
@@ -183,7 +183,7 @@ bool TextureManager::execute(const Handle& handle, std::function<bool(TextureRes
 	return false;
 }
 
-bool TextureManager::bind(const Handle& handle) const
+bool TextureManager::bind(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -205,7 +205,7 @@ unsigned int TextureManager::getSizeInVRAM() const
 	return 0u;
 }
 
-bool TextureManager::exists(const Handle& handle) const
+bool TextureManager::exists(const TextureHandle& handle) const
 {
 	return (handle.getIndex() < textures.size() && handle.getGeneration() == generations[handle.getIndex()]);
 }
@@ -215,7 +215,7 @@ bool TextureManager::verifyTextureDescriptor(const TextureDesc& desc)
 	return (desc.resolution.width > 0u && desc.resolution.height > 0u);
 }
 
-bool TextureManager::setBorderColor(const Handle& handle, const ColorRGBA& color)
+bool TextureManager::setBorderColor(const TextureHandle& handle, const ColorRGBA& color)
 {
 	if (exists(handle))
 	{
@@ -229,7 +229,7 @@ bool TextureManager::setBorderColor(const Handle& handle, const ColorRGBA& color
 	return false;
 }
 
-bool TextureManager::setWrapping(const Handle& handle, TextureWrapping s, TextureWrapping t, TextureWrapping r)
+bool TextureManager::setWrapping(const TextureHandle& handle, TextureWrapping s, TextureWrapping t, TextureWrapping r)
 {
 	if (exists(handle))
 	{
@@ -243,7 +243,7 @@ bool TextureManager::setWrapping(const Handle& handle, TextureWrapping s, Textur
 	return false;
 }
 
-bool TextureManager::setFiltering(const Handle& handle, TextureFilteringMin min, TextureFilteringMag mag)
+bool TextureManager::setFiltering(const TextureHandle& handle, TextureFilteringMin min, TextureFilteringMag mag)
 {
 	if (exists(handle))
 	{
@@ -257,7 +257,7 @@ bool TextureManager::setFiltering(const Handle& handle, TextureFilteringMin min,
 	return false;
 }
 
-std::optional<TextureType> TextureManager::getType(const Handle& handle) const
+std::optional<TextureType> TextureManager::getType(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -268,7 +268,7 @@ std::optional<TextureType> TextureManager::getType(const Handle& handle) const
 	return std::nullopt;
 }
 
-std::optional<TextureDesc> TextureManager::getDescriptor(const Handle& handle) const
+std::optional<TextureDesc> TextureManager::getDescriptor(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -278,7 +278,7 @@ std::optional<TextureDesc> TextureManager::getDescriptor(const Handle& handle) c
 
 	return std::nullopt;
 }
-std::optional<ResolutionDesc> TextureManager::getResolution(const Handle& handle) const
+std::optional<ResolutionDesc> TextureManager::getResolution(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -288,7 +288,7 @@ std::optional<ResolutionDesc> TextureManager::getResolution(const Handle& handle
 
 	return std::nullopt;
 }
-std::optional<TextureSamplingDesc> TextureManager::getSamplingDesc(const Handle& handle) const
+std::optional<TextureSamplingDesc> TextureManager::getSamplingDesc(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -299,7 +299,7 @@ std::optional<TextureSamplingDesc> TextureManager::getSamplingDesc(const Handle&
 	return std::nullopt;
 }
 
-std::optional<GLuint> TextureManager::getID(const Handle& handle) const
+std::optional<GLuint> TextureManager::getID(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -310,7 +310,7 @@ std::optional<GLuint> TextureManager::getID(const Handle& handle) const
 	return std::nullopt;
 }
 
-unsigned int TextureManager::getReferencesCount(const Handle& handle) const
+unsigned int TextureManager::getReferencesCount(const TextureHandle& handle) const
 {
 	if (exists(handle))
 	{
@@ -398,7 +398,7 @@ unsigned int TextureManager::deleteUnused()
 	return count;
 }
 
-std::optional<Handle> TextureManager::addTexture(TextureResource&& res, const TextureDesc& desc, const char* path)
+std::optional<TextureHandle> TextureManager::addTexture(TextureResource&& res, const TextureDesc& desc, const char* path)
 {
 	std::optional<unsigned int> freeSlot = popFirstFreeSlot();
 	unsigned int index;
@@ -428,7 +428,7 @@ std::optional<Handle> TextureManager::addTexture(TextureResource&& res, const Te
 		}
 	}
 
-	return Handle(this, index, generations[index]);
+	return createHandle(this, index, generations[index]);
 }
 
 std::optional<unsigned int> TextureManager::popFirstFreeSlot()

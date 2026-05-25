@@ -1,6 +1,6 @@
 #pragma once
 #include "Definitions.h"
-#include "Handle.h"
+#include "TextureHandle.h"
 #include <GL/glew.h>
 #include <vector>
 #include <optional>
@@ -33,7 +33,7 @@ class Framebuffer
 	struct AttachmentTextureBinding
 	{
 		GLenum attachment;
-		Handle texHandle;
+		TextureHandle texHandle;
 	};
 
 	GLuint id;
@@ -51,10 +51,10 @@ public:
 	/*! \brief Adds new texture attachment to Framebuffer.
 	
 		\param[in] texMgr needed in order to get Texture descriptor
-		\param[in] tex Handle to texture attachment (supports types: Texture2D and TextureCube)
+		\param[in] tex TextureHandle to texture attachment (supports types: Texture2D and TextureCube)
 		\param[in] attachment Attachment point in FBO (for example: GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT)
 	*/
-	bool assignTextureAttachment(const TextureManager& texMgr, const Handle& handle, GLenum attachment);
+	bool assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment);
 	//bool addRenderBufferAttachment(GLenum attachment);
 
 	/*! \brief Adds new Render Buffer Attachment to Framebuffer.
@@ -79,7 +79,7 @@ public:
 		instance. Otherwise, it may receive status of another Framebuffer. 
 	*/
 	static GLenum getFramebufferStatus();
-	std::optional<Handle> getTextureAttachment(GLenum attachment);
+	std::optional<TextureHandle> getTextureAttachment(GLenum attachment);
 	unsigned int getWidth() const;
 	unsigned int getHeight() const;
 };
