@@ -59,8 +59,7 @@ public:
 	unsigned int getCount() const;
 	unsigned int getSizeInVRAM() const;
 
-	// Check if Texture exists / check if Handle is correct
-	bool exists(const TextureHandle& handle) const;
+	// Check if Handle is correct
 	static bool verifyTextureDescriptor(const TextureDesc& desc);
 
 	// Simplified access to TextureResources

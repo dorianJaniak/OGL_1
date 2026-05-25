@@ -205,11 +205,6 @@ unsigned int TextureManager::getSizeInVRAM() const
 	return 0u;
 }
 
-bool TextureManager::exists(const TextureHandle& handle) const
-{
-	return (handle.getIndex() < textures.size() && handle.getGeneration() == generations[handle.getIndex()]);
-}
-
 bool TextureManager::verifyTextureDescriptor(const TextureDesc& desc)
 {
 	return (desc.resolution.width > 0u && desc.resolution.height > 0u);

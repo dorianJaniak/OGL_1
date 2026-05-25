@@ -39,6 +39,11 @@ protected:
 			referencesCount[h.getIndex()] -= 1u;
 		}
 	}
+
+	bool exists(const Handle<ResourceManager>& h) const
+	{
+		return (h.getIndex() < generations.size() && h.getGeneration() == generations[h.getIndex()]);
+	}
 };
 
 } // namespace dj;
