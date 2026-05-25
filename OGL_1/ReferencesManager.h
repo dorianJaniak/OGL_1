@@ -9,10 +9,10 @@ namespace dj
 namespace dj
 {
 
-/*! \class TextureReferencesManager
+/*! \class ReferencesManager
 * \todo consider removing "friend Handle"
 */
-class TextureReferencesManager
+class ReferencesManager
 {
 	friend Handle;
 

@@ -164,7 +164,7 @@
     <ClCompile Include="TextureData.cpp" />
     <ClCompile Include="Handle.cpp" />
     <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="TextureReferencesManager.cpp" />
+    <ClCompile Include="ReferencesManager.cpp" />
     <ClCompile Include="TextureResource.cpp" />
     <ClCompile Include="TGLTFLoader.cpp" />
     <ClCompile Include="Time\TimeDrivenMovement.cpp" />
@@ -216,7 +216,7 @@
     <ClInclude Include="TextureData.h" />
     <ClInclude Include="Handle.h" />
     <ClInclude Include="TextureManager.h" />
-    <ClInclude Include="TextureReferencesManager.h" />
+    <ClInclude Include="ReferencesManager.h" />
     <ClInclude Include="TextureResource.h" />
     <ClInclude Include="TGLTFLoader.h" />
     <ClInclude Include="Time\OccurrenceFrequency.h" />

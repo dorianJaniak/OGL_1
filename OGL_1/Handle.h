@@ -3,7 +3,7 @@
 namespace dj
 {
 class TextureManager;
-class TextureReferencesManager;
+class ReferencesManager;
 } // namespace dj
 
 namespace dj
@@ -17,7 +17,7 @@ class Handle
 {
 	friend TextureManager;
 
-	TextureReferencesManager* manager{ nullptr };
+	ReferencesManager* manager{ nullptr };
 	unsigned int index{ 0u };
 	unsigned int generation{ 0u };
 
@@ -36,7 +36,7 @@ public:
 
 private:
 	// accessible only for TextureManager
-	Handle(TextureReferencesManager* manager, unsigned int index, unsigned int generation);
+	Handle(ReferencesManager* manager, unsigned int index, unsigned int generation);
 };
 
 } // namespace dj

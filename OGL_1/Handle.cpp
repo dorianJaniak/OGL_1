@@ -1,5 +1,5 @@
 #include "Handle.h"
-#include "TextureReferencesManager.h"
+#include "ReferencesManager.h"
 #include <cassert>
 using namespace dj;
 
@@ -71,7 +71,7 @@ unsigned int Handle::getGeneration() const
 	return generation;
 }
 
-Handle::Handle(TextureReferencesManager* manager, unsigned int index, unsigned int generation)
+Handle::Handle(ReferencesManager* manager, unsigned int index, unsigned int generation)
 	: manager(manager)
 	, index(index)
 	, generation(generation)
