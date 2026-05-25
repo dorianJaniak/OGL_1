@@ -1,9 +1,9 @@
-#include "TextureHandle.h"
+#include "Handle.h"
 #include "TextureReferencesManager.h"
 #include <cassert>
 using namespace dj;
 
-TextureHandle::TextureHandle(const TextureHandle& handle) noexcept
+Handle::Handle(const Handle& handle) noexcept
 	: manager(handle.manager)
 	, index(handle.index)
 	, generation(handle.generation)
@@ -12,7 +12,7 @@ TextureHandle::TextureHandle(const TextureHandle& handle) noexcept
 	manager->addRef(handle);
 }
 
-TextureHandle::TextureHandle(TextureHandle&& handle) noexcept
+Handle::Handle(Handle&& handle) noexcept
 	: manager(handle.manager)
 	, index(handle.index)
 	, generation(handle.generation)
@@ -22,7 +22,7 @@ TextureHandle::TextureHandle(TextureHandle&& handle) noexcept
 	handle.manager = nullptr;
 }
 
-TextureHandle& TextureHandle::operator=(const TextureHandle& handle) noexcept
+Handle& Handle::operator=(const Handle& handle) noexcept
 {
 	index = handle.index;
 	generation = handle.generation;
@@ -34,7 +34,7 @@ TextureHandle& TextureHandle::operator=(const TextureHandle& handle) noexcept
 	return *this;
 }
 
-TextureHandle& TextureHandle::operator=(TextureHandle&& handle) noexcept
+Handle& Handle::operator=(Handle&& handle) noexcept
 {
 	index = handle.index;
 	generation = handle.generation;
@@ -47,10 +47,10 @@ TextureHandle& TextureHandle::operator=(TextureHandle&& handle) noexcept
 	return *this;
 }
 
-TextureHandle::~TextureHandle()
+Handle::~Handle()
 {
 	//assert(manager && "Pointer to TextureManager is nullptr");
-	// It is possible when TextureHandle was moved
+	// It is possible when Handle was moved
 	if (manager)
 	{
 		manager->removeRef(*this);
@@ -61,17 +61,17 @@ TextureHandle::~TextureHandle()
 	}
 }
 
-unsigned int TextureHandle::getIndex() const
+unsigned int Handle::getIndex() const
 {
 	return index;
 }
 
-unsigned int TextureHandle::getGeneration() const
+unsigned int Handle::getGeneration() const
 {
 	return generation;
 }
 
-TextureHandle::TextureHandle(TextureReferencesManager* manager, unsigned int index, unsigned int generation)
+Handle::Handle(TextureReferencesManager* manager, unsigned int index, unsigned int generation)
 	: manager(manager)
 	, index(index)
 	, generation(generation)

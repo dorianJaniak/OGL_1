@@ -162,7 +162,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShadowFramebuffer.cpp" />
     <ClCompile Include="TextureData.cpp" />
-    <ClCompile Include="TextureHandle.cpp" />
+    <ClCompile Include="Handle.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TextureReferencesManager.cpp" />
     <ClCompile Include="TextureResource.cpp" />
@@ -214,7 +214,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ShadowFramebuffer.h" />
     <ClInclude Include="TextureData.h" />
-    <ClInclude Include="TextureHandle.h" />
+    <ClInclude Include="Handle.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TextureReferencesManager.h" />
     <ClInclude Include="TextureResource.h" />

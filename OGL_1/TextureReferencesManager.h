@@ -3,25 +3,25 @@
 
 namespace dj
 {
-	class TextureHandle;
+	class Handle;
 }
 
 namespace dj
 {
 
 /*! \class TextureReferencesManager
-* \todo consider removing "friend TextureHandle"
+* \todo consider removing "friend Handle"
 */
 class TextureReferencesManager
 {
-	friend TextureHandle;
+	friend Handle;
 
 protected:
 	std::vector<unsigned int> referencesCount;
 	std::vector<unsigned int> generations;
 
-	void addRef(const TextureHandle& handle);
-	void removeRef(const TextureHandle& handle);
+	void addRef(const Handle& handle);
+	void removeRef(const Handle& handle);
 };
 
 } // namespace dj;

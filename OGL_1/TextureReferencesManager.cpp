@@ -1,8 +1,8 @@
 #include "TextureReferencesManager.h"
-#include "TextureHandle.h"
+#include "Handle.h"
 using namespace dj;
 
-void TextureReferencesManager::addRef(const TextureHandle& h)
+void TextureReferencesManager::addRef(const Handle& h)
 {
 	if (h.getIndex() < referencesCount.size() 
 		&& h.getGeneration() == generations[h.getIndex()])
@@ -11,7 +11,7 @@ void TextureReferencesManager::addRef(const TextureHandle& h)
 	}
 }
 
-void TextureReferencesManager::removeRef(const TextureHandle& h)
+void TextureReferencesManager::removeRef(const Handle& h)
 {
 	if (h.getIndex() < referencesCount.size()
 		&& h.getGeneration() == generations[h.getIndex()])

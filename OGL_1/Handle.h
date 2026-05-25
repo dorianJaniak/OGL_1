@@ -9,11 +9,11 @@ class TextureReferencesManager;
 namespace dj
 {
 
-/*! \class TextureHandle
+/*! \class Handle
 * \todo Join index and generation to uint32_t
 * \todo Consider if it should set Index to max (it is not safe to use assert in case of std::move). Should I set manager to nullptr?
 */
-class TextureHandle
+class Handle
 {
 	friend TextureManager;
 
@@ -22,21 +22,21 @@ class TextureHandle
 	unsigned int generation{ 0u };
 
 public:
-	TextureHandle() = delete;
-	TextureHandle(const TextureHandle& handle) noexcept;
-	TextureHandle(TextureHandle&& handle) noexcept;
-	TextureHandle& operator=(const TextureHandle& handle) noexcept;
-	TextureHandle& operator=(TextureHandle&& handle) noexcept;
-	bool operator==(const TextureHandle&) const = default;
+	Handle() = delete;
+	Handle(const Handle& handle) noexcept;
+	Handle(Handle&& handle) noexcept;
+	Handle& operator=(const Handle& handle) noexcept;
+	Handle& operator=(Handle&& handle) noexcept;
+	bool operator==(const Handle&) const = default;
 
-	~TextureHandle();
+	~Handle();
 
 	unsigned int getIndex() const;
 	unsigned int getGeneration() const;
 
 private:
 	// accessible only for TextureManager
-	TextureHandle(TextureReferencesManager* manager, unsigned int index, unsigned int generation);
+	Handle(TextureReferencesManager* manager, unsigned int index, unsigned int generation);
 };
 
 } // namespace dj

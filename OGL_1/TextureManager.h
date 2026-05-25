@@ -1,7 +1,7 @@
 #pragma once
 #include "TextureReferencesManager.h"
 #include "Utils/NonCopyableNonMovable.h"
-#include "TextureHandle.h"
+#include "Handle.h"
 #include "TextureResource.h"
 #include "Enums/TextureParameterEnums.h"
 #include "Definitions.h"
@@ -46,37 +46,37 @@ public:
 	TextureManager() noexcept = default;
 	~TextureManager() noexcept = default;
 
-	std::optional<TextureHandle> createEmptyTexture(const TextureDesc& desc);
-	std::optional<TextureHandle> create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps = false, bool flip = false, bool internalSRGB = false);
-	std::optional<TextureHandle> createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const std::array<CubeSideMapping, 6>& pathSuffixes, bool generateMipMaps = false, bool flip = false, bool internalSRGB = false);
+	std::optional<Handle> createEmptyTexture(const TextureDesc& desc);
+	std::optional<Handle> create2DFromFile(const TextureSamplingDesc& sampling, const char* path, bool generateMipMaps = false, bool flip = false, bool internalSRGB = false);
+	std::optional<Handle> createCubeMapFromFile(const TextureSamplingDesc& sampling, const char* pathPrefix, const std::array<CubeSideMapping, 6>& pathSuffixes, bool generateMipMaps = false, bool flip = false, bool internalSRGB = false);
 
 	// Operate on Texture
-	bool check(const TextureHandle& handle, std::function<bool(const TextureResource&)> fun) const;
-	bool execute(const TextureHandle& handle, std::function<bool(TextureResource&)> fun);
-	bool bind(const TextureHandle& handle) const;
+	bool check(const Handle& handle, std::function<bool(const TextureResource&)> fun) const;
+	bool execute(const Handle& handle, std::function<bool(TextureResource&)> fun);
+	bool bind(const Handle& handle) const;
 
 	// Get size
 	unsigned int getCount() const;
 	unsigned int getSizeInVRAM() const;
 
-	// Check if Texture exists / check if TextureHandle is correct
-	bool exists(const TextureHandle& handle) const;
+	// Check if Texture exists / check if Handle is correct
+	bool exists(const Handle& handle) const;
 	static bool verifyTextureDescriptor(const TextureDesc& desc);
 
 	// Simplified access to TextureResources
-	bool setBorderColor(const TextureHandle& handle, const ColorRGBA& color);
-	bool setWrapping(const TextureHandle& handle, TextureWrapping s, TextureWrapping t, TextureWrapping r);
-	bool setFiltering(const TextureHandle& handle, TextureFilteringMin min, TextureFilteringMag mag);
-	std::optional<TextureType> getType(const TextureHandle& handle) const;
-	std::optional<TextureDesc> getDescriptor(const TextureHandle& handle) const;
-	std::optional<ResolutionDesc> getResolution(const TextureHandle& handle) const;
-	std::optional<TextureSamplingDesc> getSamplingDesc(const TextureHandle& handle) const;
+	bool setBorderColor(const Handle& handle, const ColorRGBA& color);
+	bool setWrapping(const Handle& handle, TextureWrapping s, TextureWrapping t, TextureWrapping r);
+	bool setFiltering(const Handle& handle, TextureFilteringMin min, TextureFilteringMag mag);
+	std::optional<TextureType> getType(const Handle& handle) const;
+	std::optional<TextureDesc> getDescriptor(const Handle& handle) const;
+	std::optional<ResolutionDesc> getResolution(const Handle& handle) const;
+	std::optional<TextureSamplingDesc> getSamplingDesc(const Handle& handle) const;
 
 	/*! \todo Consider other solution to avoid passing OpenGL Texture ID (like RenderBackend class which would be a friend of TextureResource) */
-	std::optional<GLuint> getID(const TextureHandle& handle) const;
+	std::optional<GLuint> getID(const Handle& handle) const;
 
 	// Management methods
-	unsigned int getReferencesCount(const TextureHandle& handle) const;
+	unsigned int getReferencesCount(const Handle& handle) const;
 	unsigned int forceDeleteUnused();
 
 	// Debugging methods
@@ -88,7 +88,7 @@ public:
 private:
 	unsigned int deleteUnused();
 
-	std::optional<TextureHandle> addTexture(TextureResource&& res, const TextureDesc& desc, const char* path);
+	std::optional<Handle> addTexture(TextureResource&& res, const TextureDesc& desc, const char* path);
 	std::optional<unsigned int> popFirstFreeSlot();
 
 	std::optional<TextureFormatDesc> channelsCountToColorFormat(unsigned int count) const;

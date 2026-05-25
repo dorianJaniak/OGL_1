@@ -12,7 +12,7 @@ void Material::setProgram(ProgramWeakPtr program)
 	this->program = program;
 }
 
-bool Material::addTexture(const TextureHandle& handle, const std::string& samplerName)
+bool Material::addTexture(const Handle& handle, const std::string& samplerName)
 {
 	bool updated = false;
 	if (!program.expired())
@@ -71,7 +71,7 @@ ProgramWeakPtr Material::getProgram() const
 	return program;
 }
 
-unsigned int Material::getIndex(const TextureHandle& handle) const
+unsigned int Material::getIndex(const Handle& handle) const
 {
 	for (unsigned int i = 0; i < textures.size(); ++i)
 	{
