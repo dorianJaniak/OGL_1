@@ -1,4 +1,5 @@
 #pragma once
+#include "Utils/NonCopyableNonMovable.h"
 #include "Definitions.h"
 #include "TextureHandle.h"
 #include <GL/glew.h>
@@ -8,6 +9,7 @@
 namespace dj
 {
 class TextureManager;
+class FramebufferManager;
 } // namespace dj
 
 namespace dj
@@ -28,24 +30,28 @@ namespace dj
 	- check if for RBO it should take resolution from Texture Attachments 
 	- check if Texture Resolutions works correctly
 */
-class Framebuffer
+class Framebuffer : private NonCopyable
 {
+	friend FramebufferManager;
+
 	struct AttachmentTextureBinding
 	{
 		GLenum attachment;
 		TextureHandle texHandle;
 	};
 
+	static GLuint globalActiveID;
 	GLuint id;
 	GLuint rboID;
 	unsigned int width;
 	unsigned int height;
 	std::vector<AttachmentTextureBinding> textures;
+
 	// std::vector<const dj::ConstRenderBuffersWeakPtr> &renderbuffers;
 public:
 	Framebuffer() noexcept;
-	Framebuffer(const Framebuffer&) = delete;
 	Framebuffer(Framebuffer&&) noexcept;
+	Framebuffer& operator=(Framebuffer&&) noexcept;
 	~Framebuffer();
 
 	/*! \brief Adds new texture attachment to Framebuffer.
@@ -70,8 +76,8 @@ public:
 	bool genRenderbufferAttachment(GLenum attachment, GLenum internalFormat);
 
 	void nullifyData();
-	void bind();
-	void unbind();
+	void bind() const;
+	static void unbind();
 
 	/*! \brief Checks Framebuffer status.
 	
@@ -82,6 +88,15 @@ public:
 	std::optional<TextureHandle> getTextureAttachment(GLenum attachment);
 	unsigned int getWidth() const;
 	unsigned int getHeight() const;
+
+private:
+	// Methods for FramebufferManager
+	void clear();								// deletes ID
+
+	/*! \todo
+	- Consider other solution to avoid passing OpenGL Framebuffer ID (like RenderBackend class which is declared here as a friend)
+	*/
+	GLuint getID() const;
 };
 
 } // namespace dj

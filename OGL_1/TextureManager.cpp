@@ -341,7 +341,7 @@ bool TextureManager::verifyConsistency() const
 		// Verify if freeSlots points to cells in which textures truly does not exist
 		if (indexOk)
 		{
-			freeSlotsPointOk &= (referencesCount[freeSlot] == 0u && textures[freeSlot].id == 0u);
+			freeSlotsPointOk &= (referencesCount[freeSlot] == 0u && textures[freeSlot].getID() == 0u);
 		}
 	}
 

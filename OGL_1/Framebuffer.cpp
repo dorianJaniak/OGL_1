@@ -3,6 +3,8 @@
 #include <iostream>
 using namespace dj;
 
+GLuint Framebuffer::globalActiveID = 0u;
+
 Framebuffer::Framebuffer() noexcept
 	: rboID(0u)
 	, width(0u)
@@ -11,12 +13,35 @@ Framebuffer::Framebuffer() noexcept
 	glGenFramebuffers(1, &id);
 }
 
-Framebuffer::Framebuffer(Framebuffer&&) noexcept
-	: id(id)
-	, rboID(rboID)
-	, width(width)
-	, height(height)
+Framebuffer::Framebuffer(Framebuffer&& f) noexcept
+	: id(f.id)
+	, rboID(f.rboID)
+	, width(f.width)
+	, height(f.height)
+	, textures(f.textures)
 {
+	f.id = 0u;
+	f.rboID = 0u;
+	f.width = 0u;
+	f.height = 0u;
+	f.textures.clear();
+}
+
+Framebuffer& Framebuffer::operator=(Framebuffer&& f) noexcept
+{
+	id = f.id;
+	rboID = f.rboID;
+	width = f.width;
+	height = f.height;
+	textures = f.textures;
+
+	f.id = 0u;
+	f.rboID = 0u;
+	f.width = 0u;
+	f.height = 0u;
+	f.textures.clear();
+
+	return *this;
 }
 
 Framebuffer::~Framebuffer()
@@ -74,14 +99,19 @@ void Framebuffer::nullifyData()
 	glReadBuffer(GL_NONE);
 }
 
-void Framebuffer::bind()
+void Framebuffer::bind() const
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, id);
+	if (id != globalActiveID)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, id);
+		globalActiveID = id;
+	}
 }
 
 void Framebuffer::unbind()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0u);
+	globalActiveID = 0u;
 }
 
 GLenum Framebuffer::getFramebufferStatus()
@@ -110,4 +140,14 @@ unsigned int Framebuffer::getWidth() const
 unsigned int Framebuffer::getHeight() const
 {
 	return height;
+}
+
+void Framebuffer::clear()
+{
+
+}
+
+GLuint Framebuffer::getID() const
+{
+	return id;
 }
