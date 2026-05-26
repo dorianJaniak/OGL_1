@@ -27,7 +27,7 @@ namespace dj {
 	to which it will rasterize its output. It also requires setting flags in order to handle and
 	reset properly Framebuffer before rasterization begins.
 	In order to configure it properly following things needs to be specified:
-	- \ref FramebufferPtr - output FBO,
+	- \ref FramebufferHandle - handle to output FBO,
 	- \ref setClearFlags, \ref enableDepthTest, \ref enableDepthUpdate, \ref setFaceCulling functions needs to be called OR
 	- \ref setConfiguration to set all FBO related flags in a single shot.
 

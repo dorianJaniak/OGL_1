@@ -78,9 +78,6 @@
     <ClCompile Include="ObjectTransformation.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="ShadowFramebuffer.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="TGLTFLoader.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
@@ -183,9 +180,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="Predefinitions\PredefinedMeshes.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadowFramebuffer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="TGLTFLoader.h">

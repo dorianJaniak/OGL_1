@@ -161,7 +161,6 @@
     <ClCompile Include="RenderNodes\RenderDepthWorldNode.cpp" />
     <ClCompile Include="RenderNodes\RenderSkyboxWorldNode.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="ShadowFramebuffer.cpp" />
     <ClCompile Include="TextureData.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TextureResource.cpp" />
@@ -214,7 +213,6 @@
     <ClInclude Include="RenderNodes\RenderDepthWorldNode.h" />
     <ClInclude Include="RenderNodes\RenderSkyboxWorldNode.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="ShadowFramebuffer.h" />
     <ClInclude Include="TextureData.h" />
     <ClInclude Include="Handle.h" />
     <ClInclude Include="TextureHandle.h" />

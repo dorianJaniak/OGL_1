@@ -24,7 +24,6 @@
 #include "Camera.h"
 #include "CameraCube.h"
 #include "Light.h"
-#include "ShadowFramebuffer.h"
 #include "Framebuffer.h"
 #include "TGLTFLoader.h"
 #include "DefinitionsGL.h"
