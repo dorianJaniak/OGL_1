@@ -138,6 +138,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CameraCube.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
+    <ClCompile Include="FramebufferManager.cpp" />
     <ClCompile Include="InputCallback.cpp" />
     <ClCompile Include="InputSwitchboard.cpp" />
     <ClCompile Include="Light.cpp" />
@@ -189,6 +190,8 @@
     <ClInclude Include="Enums\TextureParameterEnums.h" />
     <ClInclude Include="Enums\Utils.h" />
     <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="FramebufferHandle.h" />
+    <ClInclude Include="FramebufferManager.h" />
     <ClInclude Include="InputCallback.h" />
     <ClInclude Include="InputSwitchboard.h" />
     <ClInclude Include="Perspective.h" />
