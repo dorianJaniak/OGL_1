@@ -40,9 +40,11 @@ protected:
 		}
 	}
 
+public:
+
 	bool exists(const Handle<ResourceManager>& h) const
 	{
-		return (h.getIndex() < generations.size() && h.getGeneration() == generations[h.getIndex()]);
+		return h.belongsTo(this) && (h.getIndex() < generations.size() && h.getGeneration() == generations[h.getIndex()]);
 	}
 };
 

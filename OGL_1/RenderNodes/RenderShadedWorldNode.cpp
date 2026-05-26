@@ -9,7 +9,8 @@ using namespace dj;
 
 RenderShadedWorldNode::RenderShadedWorldNode(
 	const TextureManager& texMgr,
-	FramebufferPtr output, 
+	const FramebufferManager& fboMgr,
+	FramebufferHandle output,
 	CameraPtr camera, 
 	GLuint ebo, 
 	std::vector<dj::ObjectInstancePtr>& objectInstances, 
@@ -17,7 +18,7 @@ RenderShadedWorldNode::RenderShadedWorldNode(
 	const std::vector<dj::LightFramebufferBinding>& pointFBOs,
 	std::vector<dj::LightPtr>& lights,
 	const std::string& name)
-	: IRenderWorldNode(texMgr, output, ebo, objectInstances, name)
+	: IRenderWorldNode(texMgr, fboMgr, output, ebo, objectInstances, name)
 	, CameraNodeProperty(camera)
 	, lights(lights)
 	, spotFBOs(spotFBOs)
@@ -85,20 +86,22 @@ void RenderShadedWorldNode::uniformPerProgram(ConstProgramPtr program)
 			std::string lightVPUniformName = std::string("u_lightVP[") + std::to_string(spotLightNo) + ']';
 			glUniformMatrix4fv(program->getUniformLocation(lightVPUniformName), 1, GL_FALSE, glm::value_ptr(lightVP));
 
-			if (std::optional<TextureHandle> texHandle = spotFBOs[spotLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); texHandle != std::nullopt)
+			//if (std::optional<TextureHandle> texHandle = spotFBOs[spotLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); texHandle != std::nullopt)
+			if (spotFBOs[spotLightNo].fbo.texHandles.size() > 0u)
 			{
 				std::string shadowUniformName = std::string("u_shadow[") + std::to_string(spotLightNo) + ']';
-				bindAndUniformTexture(*texHandle, program->getUniformLocation(shadowUniformName));
+				bindAndUniformTexture(spotFBOs[spotLightNo].fbo.texHandles[0u], program->getUniformLocation(shadowUniformName));
 			}
 
 			++spotLightNo;
 		}
 		else if (light->getType() == dj::Light::Type::Point && pointLightNo < pointFBOs.size())
 		{
-			if (std::optional<TextureHandle> texHandle = pointFBOs[pointLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); texHandle != std::nullopt)
+			//if (std::optional<TextureHandle> texHandle = pointFBOs[pointLightNo].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT); texHandle != std::nullopt)
+			if (pointFBOs[pointLightNo].fbo.texHandles.size() > 0u)
 			{
 				std::string shadowUniformName = std::string("u_cubeShadow[") + std::to_string(pointLightNo) + ']';
-				bindAndUniformTexture(*texHandle, program->getUniformLocation(shadowUniformName));
+				bindAndUniformTexture(pointFBOs[pointLightNo].fbo.texHandles[0u], program->getUniformLocation(shadowUniformName));
 			}
 
 			++pointLightNo;

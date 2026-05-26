@@ -49,7 +49,6 @@ Framebuffer::~Framebuffer()
 	textures.clear();
 	glDeleteFramebuffers(1, &id);
 	glDeleteRenderbuffers(1, &rboID);
-	std::cout << "Framebuffer destructed\n";
 }
 
 bool Framebuffer::assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment)

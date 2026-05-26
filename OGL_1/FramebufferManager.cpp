@@ -1,6 +1,7 @@
 #include "FramebufferManager.h"
 #include "Descriptors/TextureDesc.h"
 #include "TextureManager.h"
+#include <iostream>
 using namespace dj;
 
 std::optional<FramebufferHandle> FramebufferManager::createOnlyFramebuffer(const FramebufferDesc& desc)
@@ -18,7 +19,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 		
 	for (const TextureAttachmentDesc& attachmentDesc : desc.textureAttachments)
 	{
-		TextureDesc texDesc;
+		TextureDesc texDesc{};
 		texDesc.glType = attachmentDesc.glType;
 		texDesc.resolution = desc.resolution;
 		texDesc.sampling = attachmentDesc.sampling;
@@ -29,11 +30,13 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 		if (!tex)
 		{
+			std::cerr << "Could not create empty Texture\n";
 			return std::nullopt;
 		}
 
-		if (fbo.assignTextureAttachment(texMgr, *tex, attachmentDesc.attachment))
+		if (!fbo.assignTextureAttachment(texMgr, *tex, attachmentDesc.attachment))
 		{
+			std::cerr << "Could not assign Texture Attachment\n";
 			return std::nullopt;
 		}
 
@@ -42,8 +45,9 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 	for (const RenderBufferAttachmentDesc& attachmentDesc : desc.renderBufferAttachments)
 	{
-		if (fbo.genRenderbufferAttachment(attachmentDesc.attachment, attachmentDesc.internalFormat))
+		if (!fbo.genRenderbufferAttachment(attachmentDesc.attachment, attachmentDesc.internalFormat))
 		{
+			std::cerr << "Could not create Render Buffer Attachment\n";
 			return std::nullopt;
 		}
 	}
@@ -55,6 +59,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 	if (!handle)
 	{
+		std::cerr << "Could not add created Framebuffer\n";
 		return std::nullopt;
 	}
 

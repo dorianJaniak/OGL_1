@@ -94,17 +94,6 @@ namespace dj {
 		glm::vec2 neg;
 	};
 
-	/*!
-	*	\todo
-	*	- it is a helper class only (temporary)
-	*/
-	struct LightFramebufferBinding
-	{
-		dj::LightPtr light;
-		dj::FramebufferPtr fbo;
-	};
-
-
 	struct Log {
 		static constexpr unsigned cMaxLength = 1024;
 		char log[cMaxLength];

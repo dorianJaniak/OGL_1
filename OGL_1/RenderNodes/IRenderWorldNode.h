@@ -7,6 +7,7 @@
 namespace dj
 {
 class TextureManager;
+class FramebufferManager;
 } // namespace dj
 
 namespace dj {
@@ -28,7 +29,13 @@ class IRenderWorldNode : public IRenderNode {
 	MaterialPtr customMaterial;
 
 public:
-	IRenderWorldNode(const TextureManager& texMgr, FramebufferPtr output, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name = "");
+	IRenderWorldNode(
+		const TextureManager& texMgr,
+		const FramebufferManager& fboMgr,
+		FramebufferHandle output,
+		GLuint ebo,
+		std::vector<dj::ObjectInstancePtr>& objectInstances,
+		const std::string& name = "");
 
 	/*! \brief Replace all Materials assigned to Object Instances. Forces Node to render all Objects with this Material.
 		\param[in] material Replacement Material

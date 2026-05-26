@@ -114,6 +114,11 @@ public:
 		return generation;
 	}
 
+	bool belongsTo(const ReferencesManager<ResourceManager>* mgr) const
+	{
+		return (mgr == manager);
+	}
+
 private:
 	// accessible only for ResourceManager
 	Handle(ReferencesManager<ResourceManager>* manager, unsigned int index, unsigned int generation)

@@ -194,6 +194,7 @@
     <ClInclude Include="FramebufferManager.h" />
     <ClInclude Include="InputCallback.h" />
     <ClInclude Include="InputSwitchboard.h" />
+    <ClInclude Include="LightFramebufferBinding.h" />
     <ClInclude Include="Perspective.h" />
     <ClInclude Include="QualitySettings.h" />
     <ClInclude Include="Light.h" />

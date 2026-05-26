@@ -2,11 +2,13 @@
 #include "../Framebuffer.h"
 #include "../DefinitionsGL.h"
 #include "TextureHandle.h"
+#include "FramebufferHandle.h"
 #include <string>
 #include <unordered_map>
 
 namespace dj {
 class TextureManager;
+class FramebufferManager;
 } // namespace dj
 
 namespace dj {
@@ -60,8 +62,9 @@ class IRenderNode {
 	constexpr static unsigned int c_maxTextureUnitOffsets = 16u;
 
 	const TextureManager& texMgr;
+	const FramebufferManager& fboMgr;
 	std::string name;
-	FramebufferPtr output;
+	FramebufferHandle output;
 	GLuint clearFlags;
 	bool depthTestEnabled;
 	bool depthUpdateEnabled;
@@ -129,7 +132,11 @@ protected:
 
 
 public:
-	IRenderNode(const TextureManager& texMgr, FramebufferPtr output, const std::string& name = "");
+	IRenderNode(
+		const TextureManager& texMgr,
+		const FramebufferManager& fboMgr,
+		FramebufferHandle output,
+		const std::string& name = "");
 	/*! \brief Core Node's method - starts Rendering
 		- Calls \ref preFrame method
 		- Calls pure virtual \ref draw method 
@@ -168,7 +175,7 @@ public:
 		- sets Face Culling (specified in \ref setFaceCulling)
 		- enables / disables Depth Test (specified in \ref enableDepthTest)
 	*/
-	void preFrame();
+	bool preFrame();
 private:
 };
 

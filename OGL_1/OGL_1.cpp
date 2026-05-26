@@ -13,6 +13,8 @@
 #include "RenderNodes/RenderSkyboxWorldNode.h"
 #include "RenderNodes/IRenderNode.h"
 #include "TextureManager.h"
+#include "FramebufferManager.h"
+#include "LightFramebufferBinding.h"
 #include "MeshData.h"
 #include "Mesh.h"
 #include "Object.h"
@@ -58,15 +60,23 @@ void createObjectInstances(const std::vector<dj::ObjectPtr>& objects, std::vecto
 void loadLights(std::vector<dj::LightPtr>& lights);
 
 // Helpers - Relations
-bool createShadows(dj::TextureManager& texMgr,
+bool createShadows(
+	dj::TextureManager& texMgr,
+	dj::FramebufferManager& fboMgr,
 	const std::vector<dj::LightPtr>& lights,
 	std::vector<dj::LightFramebufferBinding>& spotFBOs,
 	std::vector<dj::LightFramebufferBinding>& pointFBOs,
 	const dj::QualitySettings<4u>& quality);
-bool createMaterials(std::vector<dj::MaterialPtr>& materials,
+bool createMaterials(
+	std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
 	const std::vector<dj::TextureHandle>& texturesPBR,
 	const std::vector<dj::TextureHandle>& texturesCube);
+std::optional<dj::FramebufferHandleSet> createMainFramebuffer(
+	dj::FramebufferManager& fboMgr,
+	dj::TextureManager& texMgr,
+	const dj::MainWindow& mw,
+	dj::QualitySettings<4u>& quality);
 
 // Helpers - Transformations
 void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances);
@@ -178,6 +188,7 @@ int main()
 	dj::TimeDrivenMovement tdm;
 
 	dj::TextureManager texMgr;
+	dj::FramebufferManager fboMgr;
 
 	std::vector<dj::ObjectPtr> objects;
 	std::vector<dj::ObjectInstancePtr> objectInstances;
@@ -227,43 +238,17 @@ int main()
 	camera->setPerspective(30.0f, mw.getAspectRatio(), 0.1f, 300.0f);
 
 	// STAGE 5 :::: FBO Creation
-	dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
-	fbo->bind();
+	std::optional<dj::FramebufferHandleSet> mainFBOHandles = createMainFramebuffer(fboMgr, texMgr, mw, quality);
+	if (!mainFBOHandles)
 	{
-		dj::TextureDesc desc{};
-		desc.glType = dj::TextureType::Texture2D;
-		desc.resolution.width = mw.getWidth();
-		desc.resolution.height = mw.getHeight();
-		desc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
-		desc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
-		desc.sampling.wrapS = dj::TextureWrapping::ClampToEdge;
-		desc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
-		desc.sampling.wrapR = dj::TextureWrapping::Repeat;
-		desc.format.inGPUColorFormat = (quality.getActive<dj::EngineQuality::MainFBHighPrecision>() ?
-			dj::ColorFormatInDevice::RGB16F : dj::ColorFormatInDevice::RGB);
-		desc.format.sourceColorFormat = dj::ColorFormatInSource::RGB;
-		desc.format.sourceValueType = dj::PixelDataTypeInSource::UnsignedByte;
-
-		std::optional<dj::TextureHandle> fboTexture = texMgr.createEmptyTexture(desc);
-
-		if (!fboTexture)
-		{
-			std::cerr << "Could not create main FBO Texture\n";
-			mw.terminate();
-			return -1;
-		}
-
-		fbo->assignTextureAttachment(texMgr, *fboTexture, GL_COLOR_ATTACHMENT0);
-		fbo->genRenderbufferAttachment(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
-		if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
-		{
-			mw.terminate();
-			return -1;
-		}
-		fbo->unbind();
-
-		cameraIDs[0] = fboTexture;
+		std::cerr << dj::Log::failPrefix() << "Could not create main FBO and its Textures\n";
+		mw.terminate();
+		return -1;
 	}
+
+	assert(mainFBOHandles->texHandles.size() > 0 && "Main FBO creation failed - it should have at least 1 texture attached");
+	dj::TextureHandle fbo = mainFBOHandles->texHandles[0];
+	cameraIDs[0] = fbo;
 
 	GLuint svbo, svao;
 	glGenBuffers(1, &svbo);
@@ -278,7 +263,7 @@ int main()
 	glEnableVertexAttribArray(1);
 
 	// STAGE 6 :::: FBO for shadow maps
-	if (!createShadows(texMgr, lights, spotFBOs, pointFBOs, quality))
+	if (!createShadows(texMgr, fboMgr, lights, spotFBOs, pointFBOs, quality))
 	{
 		mw.terminate();
 		return -1;
@@ -340,7 +325,8 @@ int main()
 	assert(spotFBOs.size() >= 2);
 	for (unsigned int i = 0u; i < 2u; ++i)
 	{
-		cameraIDs[i + 1u] = spotFBOs[i].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
+		//cameraIDs[i + 1u] = spotFBOs[i].fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
+		cameraIDs[i + 1u] = spotFBOs[i].fbo.texHandles[0u];
 	}
 
 	// Define some color
@@ -376,9 +362,9 @@ int main()
 	//worldNode.setConfiguration(GL_NONE, true, true, GL_NONE);
 
 	// VARIANT 2
-	dj::RenderShadedWorldNode worldNode{ texMgr, fbo, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World") };
+	dj::RenderShadedWorldNode worldNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World") };
 	worldNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, true, true, GL_NONE);
-	dj::RenderSkyboxWorldNode skyboxNode{ texMgr, fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
+	dj::RenderSkyboxWorldNode skyboxNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
 	skyboxNode.setConfiguration(GL_NONE, true, false, GL_NONE);
 
 	std::vector<dj::ObjectInstancePtr> cubeMapDebugObjectInstances;
@@ -387,7 +373,7 @@ int main()
 		cubeObjInst->setMaterial(materials.at(3u));
 		cubeMapDebugObjectInstances.push_back(cubeObjInst);
 	}
-	dj::RenderSkyboxWorldNode cubeMapDebugNode{ texMgr, fbo, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
+	dj::RenderSkyboxWorldNode cubeMapDebugNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
 	cubeMapDebugNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
 
 	dj::OccurrenceFrequency fps(std::chrono::milliseconds(5000u));
@@ -435,9 +421,6 @@ int main()
 			// Pointer to active program
 			dj::ProgramPtr activeProgram = enginePrograms.at(dj::EngineProgramID::depth);
 
-			// Bind Framebuffer
-			shadow.fbo->bind();
-
 			// Copy lights data to camera
 			// The same as ShadowFramebuffer::configureCamera
 			dj::Camera cam;
@@ -445,8 +428,13 @@ int main()
 			cam.setRotation(glm::vec3(shadow.light->tmpXPitch, shadow.light->tmpYYaw, 0.0f));
 			cam.setPerspective(shadow.light->getSpotlightAngle() + 30.0f, 1.0f, shadow.light->getShadowNearPlane(), shadow.light->getShadowFarPlane());
 
-			// Setup rendering
-			glViewport(0, 0, shadow.fbo->getWidth(), shadow.fbo->getHeight());
+			// Bind Framebuffer and Setup Rendering
+			fboMgr.check(shadow.fbo.handle, [](const dj::Framebuffer& f) {
+				f.bind();
+				glViewport(0, 0, f.getWidth(), f.getHeight());
+				return true;
+			});
+
 			glClear(GL_DEPTH_BUFFER_BIT);
 
 			// Setup light projection
@@ -470,7 +458,7 @@ int main()
 			// Pointer to active program
 			dj::ProgramPtr activeProgram = enginePrograms.at(dj::EngineProgramID::depthCube);
 
-			shadow.fbo->bind();
+			// Copy lights data to camera
 			dj::CameraCube cameraCube;
 			cameraCube.setPlanes(1.0f, 25.0f);
 			cameraCube.setPosition(shadow.light->getPosition());
@@ -484,7 +472,12 @@ int main()
 				glUniformMatrix4fv(activeProgram->getUniformLocation(uniformName.c_str()), 1, GL_FALSE, glm::value_ptr(cameraCube.getVPMatrix(i)));
 			}
 
-			glViewport(0, 0, shadow.fbo->getWidth(), shadow.fbo->getHeight());
+			// Bind Framebuffer and Setup Rendering
+			fboMgr.check(shadow.fbo.handle, [](const dj::Framebuffer& f) {
+				f.bind();
+				glViewport(0, 0, f.getWidth(), f.getHeight());
+				return true;
+			});
 			glClear(GL_DEPTH_BUFFER_BIT);
 			
 			// Render vertices for Shadows (duplicated)
@@ -494,10 +487,11 @@ int main()
 		// Stage 9.3.2 :::: Render Debug Cubemap
 		if (dt->getActiveCameraIndex() == 3u)
 		{
-			std::optional<dj::TextureHandle> shTex = pointFBOs.at(1).fbo->getTextureAttachment(GL_DEPTH_ATTACHMENT);
-			if (shTex)
+			assert(pointFBOs.size() >= 2u && "Expected 2 Point lights in pointFBOs vector");
+			dj::TextureHandle shTex = pointFBOs.at(1).fbo.texHandles[0u];
+			if (texMgr.exists(shTex))
 			{
-				cubeMapDebugNode.addTexture("u_skybox", *shTex);
+				cubeMapDebugNode.addTexture("u_skybox", shTex);
 			}
 			cubeMapDebugNode.run();
 
@@ -964,7 +958,8 @@ void loadLights(std::vector<dj::LightPtr>& lights)
 	lights.push_back(light4);
 }
 
-bool createShadows(dj::TextureManager& texMgr, 
+bool createShadows(dj::TextureManager& texMgr,
+					dj::FramebufferManager& fboMgr,
 					const std::vector<dj::LightPtr>& lights, 
 					std::vector<dj::LightFramebufferBinding>& spotFBOs,
 					std::vector<dj::LightFramebufferBinding>& pointFBOs,
@@ -980,81 +975,68 @@ bool createShadows(dj::TextureManager& texMgr,
 		{
 			std::cout << "Creating Framebuffer for 2D Shadow\n";
 
-			dj::TextureDesc desc{};
-			desc.glType = dj::TextureType::Texture2D;
+			dj::FramebufferDesc desc{};
 			desc.resolution.width = shadow2DRes;
 			desc.resolution.height = shadow2DRes;
-			desc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
-			desc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
-			desc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
-			desc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
-			desc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
-			desc.sampling.wrapS = dj::TextureWrapping::ClampToBorder;
-			desc.sampling.wrapT = dj::TextureWrapping::ClampToBorder;
-			desc.mipmaps = false;
 
-			std::optional<dj::TextureHandle> handle = texMgr.createEmptyTexture(desc);
-			if (!handle)
+			dj::TextureAttachmentDesc texAttachDesc{};
+			texAttachDesc.attachment = GL_DEPTH_ATTACHMENT;
+			texAttachDesc.glType = dj::TextureType::Texture2D;
+			texAttachDesc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
+			texAttachDesc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
+			texAttachDesc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
+			texAttachDesc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
+			texAttachDesc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
+			texAttachDesc.sampling.wrapS = dj::TextureWrapping::ClampToBorder;
+			texAttachDesc.sampling.wrapT = dj::TextureWrapping::ClampToBorder;
+
+			desc.textureAttachments.push_back(texAttachDesc);
+
+			std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
+			if (!handleSet || handleSet->texHandles.size() == 0u)
 			{
 				std::cerr << dj::Log::failPrefix() << "Could not create texture for Spotlight\n";
 				return false;
 			}
 
-			texMgr.setBorderColor(*handle, { 1.0f, 1.0f, 1.0f, 1.0f });
+			texMgr.setBorderColor(handleSet->texHandles[0], {1.0f, 1.0f, 1.0f, 1.0f});
 
-			dj::FramebufferPtr fbo = std::make_shared<dj::Framebuffer>();
-			fbo->bind();
-			fbo->assignTextureAttachment(texMgr, *handle, GL_DEPTH_ATTACHMENT);
-			fbo->nullifyData();
+			//ok &= verifyFramebufferStatus(fbo->getFramebufferStatus());
 
-			ok &= verifyFramebufferStatus(fbo->getFramebufferStatus());
-			fbo->unbind();
-
-			spotFBOs.push_back({light, fbo});
+			spotFBOs.push_back({light, *handleSet});
 		}
 		else if (light->getType() == dj::Light::Type::Point)
 		{
 			std::cout << "Creating Framebuffer for Cubemap Shadow\n";
 
-			const static GLenum sides[6] = {
-				GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-				GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-				GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-				GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-				GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-				GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-			};
-
-			dj::TextureDesc desc{};
-			desc.glType = dj::TextureType::TextureCube;
+			dj::FramebufferDesc desc{};
 			desc.resolution.width = shadowCubeRes;
 			desc.resolution.height = shadowCubeRes;
-			desc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
-			desc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
-			desc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
-			desc.sampling.minFilter = dj::TextureFilteringMin::Linear;
-			desc.sampling.magFilter = dj::TextureFilteringMag::Linear;
-			desc.sampling.wrapS = dj::TextureWrapping::ClampToEdge;
-			desc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
-			desc.sampling.wrapR = dj::TextureWrapping::ClampToEdge;
-			desc.mipmaps = false;
 
-			std::optional<dj::TextureHandle> handle = texMgr.createEmptyTexture(desc);
-			if (!handle)
+			dj::TextureAttachmentDesc texAttachDesc{};
+			texAttachDesc.attachment = GL_DEPTH_ATTACHMENT;
+			texAttachDesc.glType = dj::TextureType::TextureCube;
+			texAttachDesc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
+			texAttachDesc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
+			texAttachDesc.format.sourceValueType = dj::PixelDataTypeInSource::Float;
+			texAttachDesc.sampling.minFilter = dj::TextureFilteringMin::Linear;
+			texAttachDesc.sampling.magFilter = dj::TextureFilteringMag::Linear;
+			texAttachDesc.sampling.wrapS = dj::TextureWrapping::ClampToEdge;
+			texAttachDesc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
+			texAttachDesc.sampling.wrapR = dj::TextureWrapping::ClampToEdge;
+
+			desc.textureAttachments.push_back(texAttachDesc);
+
+			std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
+			if (!handleSet || handleSet->texHandles.size() == 0u)
 			{
 				std::cerr << dj::Log::failPrefix() << "Could not create texture for Pointlight\n";
 				return false;
 			}
 
-			// Create Framebuffer (Cube)
-			dj::FramebufferPtr cubeDepthFBO = std::make_shared<dj::Framebuffer>();
-			cubeDepthFBO->bind();
-			cubeDepthFBO->assignTextureAttachment(texMgr, *handle, GL_DEPTH_ATTACHMENT);
-			cubeDepthFBO->nullifyData();
-			ok &= verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
-			cubeDepthFBO->unbind();
+			//ok &= verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
 
-			pointFBOs.push_back({light, cubeDepthFBO});
+			pointFBOs.push_back({ light, *handleSet });
 		}
 	}
 
@@ -1110,6 +1092,47 @@ bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	}
 
 	return true;
+}
+
+std::optional<dj::FramebufferHandleSet> createMainFramebuffer(
+	dj::FramebufferManager& fboMgr,
+	dj::TextureManager& texMgr,
+	const dj::MainWindow& mw,
+	dj::QualitySettings<4u>& quality)
+{
+	dj::FramebufferDesc desc{};
+	desc.resolution.width = mw.getWidth();
+	desc.resolution.height = mw.getHeight();
+
+	dj::TextureAttachmentDesc texAttDesc{};
+	texAttDesc.attachment = GL_COLOR_ATTACHMENT0;
+	texAttDesc.glType = dj::TextureType::Texture2D;
+	texAttDesc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
+	texAttDesc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
+	texAttDesc.sampling.wrapS = dj::TextureWrapping::ClampToEdge;
+	texAttDesc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
+	texAttDesc.sampling.wrapR = dj::TextureWrapping::Repeat;
+	texAttDesc.format.inGPUColorFormat = (quality.getActive<dj::EngineQuality::MainFBHighPrecision>() ?
+		dj::ColorFormatInDevice::RGB16F : dj::ColorFormatInDevice::RGB);
+	texAttDesc.format.sourceColorFormat = dj::ColorFormatInSource::RGB;
+	texAttDesc.format.sourceValueType = dj::PixelDataTypeInSource::UnsignedByte;
+
+	dj::RenderBufferAttachmentDesc renderAttDesc{};
+	renderAttDesc.attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+	renderAttDesc.internalFormat = GL_DEPTH24_STENCIL8;
+
+	desc.textureAttachments.push_back(texAttDesc);
+	desc.renderBufferAttachments.push_back(renderAttDesc);
+
+	std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
+
+	//	if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
+	//	{
+	//		mw.terminate();
+	//		return -1;
+	//	}
+
+	return handleSet;
 }
 
 void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instances)

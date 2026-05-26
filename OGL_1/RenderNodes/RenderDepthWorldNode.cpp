@@ -4,8 +4,15 @@
 #include <gtc/type_ptr.hpp>
 using namespace dj;
 
-RenderDepthWorldNode::RenderDepthWorldNode(const TextureManager& texMgr, FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name)
-	: IRenderWorldNode(texMgr, output, ebo, objectInstances, name)
+RenderDepthWorldNode::RenderDepthWorldNode(
+	const TextureManager& texMgr,
+	const FramebufferManager& fboMgr,
+	FramebufferHandle output,
+	CameraPtr camera,
+	GLuint ebo,
+	std::vector<dj::ObjectInstancePtr>& objectInstances,
+	const std::string& name)
+	: IRenderWorldNode(texMgr, fboMgr, output, ebo, objectInstances, name)
 	, CameraNodeProperty(camera)
 {
 }

@@ -120,12 +120,6 @@
     <ClCompile Include="TextureResource.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="TextureHandle.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureReferencesManager.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\GLWrapper.cpp">
       <Filter>Pliki źródłowe\Utils</Filter>
     </ClCompile>
@@ -143,6 +137,9 @@
     </ClCompile>
     <ClCompile Include="Time\TimeDrivenMovement.cpp">
       <Filter>Pliki źródłowe\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="FramebufferManager.cpp">
+      <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -266,9 +263,6 @@
     <ClInclude Include="TextureResource.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="TextureReferencesManager.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
     <ClInclude Include="Enums\TextureColorEnums.h">
       <Filter>Pliki nagłówkowe\Enums</Filter>
     </ClInclude>
@@ -310,6 +304,21 @@
     </ClInclude>
     <ClInclude Include="Time\TimeFlow.h">
       <Filter>Pliki nagłówkowe\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="FramebufferHandle.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="FramebufferManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Handle.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="ReferencesManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="LightFramebufferBinding.h">
+      <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

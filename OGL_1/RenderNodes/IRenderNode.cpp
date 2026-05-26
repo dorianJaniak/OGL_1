@@ -1,6 +1,7 @@
 #include "IRenderNode.h"
 #include "../Program.h"
 #include "TextureManager.h"
+#include "FramebufferManager.h"
 using namespace dj;
 
 void IRenderNode::beginBindingTextures()
@@ -79,8 +80,13 @@ unsigned int IRenderNode::getFreeTextureUnitsCount() const
 	return (textureUnitNo > c_maxTextureUnitsCount ? 0u : c_maxTextureUnitsCount - textureUnitNo);
 }
 
-IRenderNode::IRenderNode(const TextureManager& texMgr, FramebufferPtr output, const std::string& name)
+IRenderNode::IRenderNode(
+	const TextureManager& texMgr,
+	const FramebufferManager& fboMgr,
+	FramebufferHandle output,
+	const std::string& name)
 	: texMgr(texMgr)
+	, fboMgr(fboMgr)
 	, output(output)
 	, clearFlags(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
 	, depthTestEnabled(true)
@@ -130,15 +136,24 @@ void IRenderNode::addTexture(const std::string& samplerName, const TextureHandle
 	nodeInputTextures.insert({ samplerName, texHandle });
 }
 
-void IRenderNode::preFrame()
+bool IRenderNode::preFrame()
 {
 	// Needs to unbind all texture types, in order to clear Texture state between nodes
 	// Example: Suppose previous Node bound Texture A to Texture Unit #3 (it was last bound texture)
 	//	While in this Node Texture A should be bound to Texture Unit #0 (it is first texture to be bound)
 	//	TextureResource mechanism that protects from rebinding the same texture won't call glBindTexture in this case.
 	TextureResource::unbindAllTypes();
-	output->bind();
-	glViewport(0u, 0u, output->getWidth(), output->getHeight());
+
+	auto viewportFun = [](const Framebuffer& f) {
+		f.bind();
+		glViewport(0u, 0u, f.getWidth(), f.getHeight());
+		return true;
+	};
+
+	if (!fboMgr.check(output, viewportFun))
+	{
+		return false;
+	}
 
 	if (clearFlags != GL_NONE)
 	{
@@ -170,4 +185,6 @@ void IRenderNode::preFrame()
 	{
 		glDisable(GL_DEPTH_TEST);
 	}
+
+	return true;
 }
