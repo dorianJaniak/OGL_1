@@ -667,21 +667,26 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 {
 	unsigned int uniformsCount = 0u;
 	unsigned int uniformsOkCount = 0u;
-	auto check = [&uniformsCount, &uniformsOkCount](bool success)
+
+	auto registerAndCheck = [&uniformsCount, &uniformsOkCount](dj::ProgramPtr& program, const std::string& uniformName)
 		{
 			++uniformsCount;
-			if (success)
+			if (program->registerUniform(uniformName))
 			{
 				++uniformsOkCount;
 			}
+			else
+			{
+				std::cerr << dj::Log::warnPrefix() << "Could not locate uniform: " << uniformName << " in program: " << program->getName() << std::endl;
+			}
 		};
 
-	auto registerLightsUniforms = [&check](dj::ProgramPtr& program, const unsigned int lightsCount, const char* postfix)
+	auto registerLightsUniforms = [&registerAndCheck](dj::ProgramPtr& program, const unsigned int lightsCount, const char* postfix)
 		{
 			for (unsigned int i = 0; i < lightsCount; ++i)
 			{
 				std::string name = "u_light[" + std::to_string(i) + "]." + postfix;
-				check(program->registerUniform(name));
+				registerAndCheck(program, name);
 			}
 		};
 
@@ -700,31 +705,31 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 		prePBRProgram->addUniformLimit(dj::Engine::UniformLimits::maxLightsCount, lightsCount);
 		prePBRProgram->addUniformLimit(dj::Engine::UniformLimits::maxPointLightsCount, 2u);
 		prePBRProgram->addUniformLimit(dj::Engine::UniformLimits::maxSpotLightsCount, 2u);
-		check(prePBRProgram->registerUniform("u_model"));
-		check(prePBRProgram->registerUniform("u_mvp"));
-		check(prePBRProgram->registerUniform("u_normalMat"));
-		check(prePBRProgram->registerUniform("u_wCamPos"));
+		registerAndCheck(prePBRProgram, "u_model");
+		registerAndCheck(prePBRProgram, "u_mvp");
+		registerAndCheck(prePBRProgram, "u_normalMat");
+		registerAndCheck(prePBRProgram, "u_wCamPos");
 
-		check(prePBRProgram->registerUniform("u_material.albedo"));
-		check(prePBRProgram->registerUniform("u_material.roughness"));
-		check(prePBRProgram->registerUniform("u_material.metallic"));
-		check(prePBRProgram->registerUniform("u_material.normal"));
-		check(prePBRProgram->registerUniform("u_skybox"));
+		registerAndCheck(prePBRProgram, "u_material.albedo");
+		registerAndCheck(prePBRProgram, "u_material.roughness");
+		registerAndCheck(prePBRProgram, "u_material.metallic");
+		registerAndCheck(prePBRProgram, "u_material.normal");
+		registerAndCheck(prePBRProgram, "u_skybox");
 
-		check(prePBRProgram->registerUniform("u_cubeShadow[0]"));
-		check(prePBRProgram->registerUniform("u_cubeShadow[1]"));
-		check(prePBRProgram->registerUniform("u_shadow[0]"));
-		check(prePBRProgram->registerUniform("u_shadow[1]"));
+		registerAndCheck(prePBRProgram, "u_cubeShadow[0]");
+		registerAndCheck(prePBRProgram, "u_cubeShadow[1]");
+		registerAndCheck(prePBRProgram, "u_shadow[0]");
+		registerAndCheck(prePBRProgram, "u_shadow[1]");
 
-		check(prePBRProgram->registerUniform("u_lightsCount"));
-		check(prePBRProgram->registerUniform("u_lightNear"));
-		check(prePBRProgram->registerUniform("u_lightFar"));
-		check(prePBRProgram->registerUniform("u_lightVP[0]"));
-		check(prePBRProgram->registerUniform("u_lightVP[1]"));
+		registerAndCheck(prePBRProgram, "u_lightsCount");
+		registerAndCheck(prePBRProgram, "u_lightNear");
+		registerAndCheck(prePBRProgram, "u_lightFar");
+		registerAndCheck(prePBRProgram, "u_lightVP[0]");
+		registerAndCheck(prePBRProgram, "u_lightVP[1]");
 
 		registerLightsUniforms(prePBRProgram, lightsCount, "pos");
 		registerLightsUniforms(prePBRProgram, lightsCount, "color");
-		registerLightsUniforms(prePBRProgram, lightsCount, "range");
+		//registerLightsUniforms(prePBRProgram, lightsCount, "range");
 		registerLightsUniforms(prePBRProgram, lightsCount, "type");
 		registerLightsUniforms(prePBRProgram, lightsCount, "dir");
 		registerLightsUniforms(prePBRProgram, lightsCount, "spotExtCos");
@@ -732,43 +737,43 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 		registerLightsUniforms(prePBRProgram, lightsCount, "shadowActive");
 
 		postprocessProgram->use();
-		check(postprocessProgram->registerUniform("frame"));
+		registerAndCheck(postprocessProgram, "frame");
 		postprocessProgram->assignTextureUnit("frame", GL_TEXTURE11);
 
 		skyboxProgram->use();
-		check(skyboxProgram->registerUniform("u_camRP"));
-		check(skyboxProgram->registerUniform("u_skybox"));
-		//skyboxProgram->assignTextureUnit("u_skybox", GL_TEXTURE10);
+		registerAndCheck(skyboxProgram, "u_camRP");
+		registerAndCheck(skyboxProgram, "u_skybox");
+		//skyboxProgram->assignTextureUnit("u_skybox", GL_TEXTURE10;
 
 		debugMeshProgram->use();
-		check(debugMeshProgram->registerUniform("u_model"));
-		check(debugMeshProgram->registerUniform("u_view"));
-		check(debugMeshProgram->registerUniform("u_normalMat"));
-		check(debugMeshProgram->registerUniform("u_proj"));
-		check(debugMeshProgram->registerUniform("u_axisLength"));
-		check(debugMeshProgram->registerUniform("u_debugSelection"));
+		registerAndCheck(debugMeshProgram, "u_model");
+		registerAndCheck(debugMeshProgram, "u_view");
+		registerAndCheck(debugMeshProgram, "u_normalMat");
+		registerAndCheck(debugMeshProgram, "u_proj");
+		registerAndCheck(debugMeshProgram, "u_axisLength");
+		registerAndCheck(debugMeshProgram, "u_debugSelection");
 
 		depthProgram->use();
-		check(depthProgram->registerUniform("u_camVP"));
-		check(depthProgram->registerUniform("u_model"));
-		check(depthProgram->registerUniform("u_near"));
-		check(depthProgram->registerUniform("u_far"));
+		registerAndCheck(depthProgram, "u_camVP");
+		registerAndCheck(depthProgram, "u_model");
+		registerAndCheck(depthProgram, "u_near");
+		registerAndCheck(depthProgram, "u_far");
 
 		depthCubeProgram->use();
-		check(depthCubeProgram->registerUniform("u_model"));
-		check(depthCubeProgram->registerUniform("u_cameraMatrices[0]"));
-		check(depthCubeProgram->registerUniform("u_cameraMatrices[1]"));
-		check(depthCubeProgram->registerUniform("u_cameraMatrices[2]"));
-		check(depthCubeProgram->registerUniform("u_cameraMatrices[3]"));
-		check(depthCubeProgram->registerUniform("u_cameraMatrices[4]"));
-		check(depthCubeProgram->registerUniform("u_cameraMatrices[5]"));
-		check(depthCubeProgram->registerUniform("u_far"));
-		check(depthCubeProgram->registerUniform("u_lightPos"));
+		registerAndCheck(depthCubeProgram, "u_model");
+		registerAndCheck(depthCubeProgram, "u_cameraMatrices[0]");
+		registerAndCheck(depthCubeProgram, "u_cameraMatrices[1]");
+		registerAndCheck(depthCubeProgram, "u_cameraMatrices[2]");
+		registerAndCheck(depthCubeProgram, "u_cameraMatrices[3]");
+		registerAndCheck(depthCubeProgram, "u_cameraMatrices[4]");
+		registerAndCheck(depthCubeProgram, "u_cameraMatrices[5]");
+		registerAndCheck(depthCubeProgram, "u_far");
+		registerAndCheck(depthCubeProgram, "u_lightPos");
 
 		if (uniformsCount != uniformsOkCount)
 		{
-			std::cerr << dj::Log::failPrefix() << "Could not locate in programs all required uniforms. Located " << uniformsOkCount << " out of " << uniformsCount << std::endl;
-			return false;
+			std::cerr << dj::Log::warnPrefix() << "Could not locate all required uniforms in programs. Located " << uniformsOkCount << " out of " << uniformsCount << std::endl;
+			return true;
 		}
 	}
 	catch (const std::out_of_range& ex)
