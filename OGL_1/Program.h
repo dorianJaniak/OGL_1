@@ -37,6 +37,7 @@ class Program {
 
 	std::unordered_map<std::string, GLint> uniformLocations;
 	std::unordered_map<std::string_view, unsigned int> uniformLimits;
+	std::string name;
 	
 	// temp
 	std::string textureUniforms[c_textureUnitsMax];
@@ -70,6 +71,7 @@ public:
 	// temp
 
 	ProgramID getIndex() const;
+	const std::string& getName() const;
 private:
 	bool link(Log& log);
 };

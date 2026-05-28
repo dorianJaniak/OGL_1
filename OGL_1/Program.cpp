@@ -26,6 +26,8 @@ bool Program::prepare(const char* const vSource, const char* const fSource, Log 
 		return false;
 	}
 
+	name = progName;
+
 	// Create and compile shaders separately
 	dj::Shader vShader(GL_VERTEX_SHADER);
 	dj::Shader fShader(GL_FRAGMENT_SHADER);
@@ -163,6 +165,11 @@ unsigned int Program::getUniformLimit(const char* const keyword) const
 ProgramID Program::getIndex() const
 {
 	return index;
+}
+
+const std::string& Program::getName() const
+{
+	return name;
 }
 
 
