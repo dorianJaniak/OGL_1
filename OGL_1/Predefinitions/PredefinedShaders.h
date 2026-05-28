@@ -261,11 +261,11 @@ in vec2 v_texCoord;
 //	1.0f / 16.0f,	2.0f / 16.0f,	1.0f / 16.0f,
 //};
 
-const float kernel [9] = {
+const float kernel [9] = float[](
 	-1.0f,	0.0f,	-1.0f,
 	-1.0f,	7.0f,	-1.0f,
-	-1.0f,	0.0f,	-1.0f,
-};
+	-1.0f,	0.0f,	-1.0f
+);
 
 const float offset = 1.0f / 500.0f;	// 10.0f
 
