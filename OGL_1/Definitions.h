@@ -110,6 +110,11 @@ namespace dj {
 			return ">>FAIL: ";
 		}
 
+		static const char* warnPrefix()
+		{
+			return ">Warn: ";
+		}
+
 		static const char* okPrefix()
 		{
 			return "OK: ";
