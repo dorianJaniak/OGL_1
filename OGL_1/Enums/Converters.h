@@ -1,6 +1,7 @@
 #pragma once
 #include "TextureColorEnums.h"
 #include "TextureParameterEnums.h"
+#include "FramebufferEnums.h"
 #include "GLTypes.h"
 #include <optional>
 
@@ -36,6 +37,19 @@ std::optional<T> toEnum(GLenum value)
 	}
 
 	return std::nullopt;
+}
+
+// Section: toInt functions
+template <class T>
+unsigned int toUnsigned(T value)
+{
+	return static_cast<unsigned int>(value);
+}
+
+template <class T>
+unsigned int toU(T value)
+{
+	return static_cast<unsigned int>(value);
 }
 
 } // namespace dj
