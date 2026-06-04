@@ -1,11 +1,14 @@
 #pragma once
 #include "../Framebuffer.h"
 #include "../DefinitionsGL.h"
+#include "TextureHandle.h"
+#include "FramebufferHandle.h"
 #include <string>
 #include <unordered_map>
 
 namespace dj {
 class TextureManager;
+class FramebufferManager;
 } // namespace dj
 
 namespace dj {
@@ -24,7 +27,7 @@ namespace dj {
 	to which it will rasterize its output. It also requires setting flags in order to handle and
 	reset properly Framebuffer before rasterization begins.
 	In order to configure it properly following things needs to be specified:
-	- \ref FramebufferPtr - output FBO,
+	- \ref FramebufferHandle - handle to output FBO,
 	- \ref setClearFlags, \ref enableDepthTest, \ref enableDepthUpdate, \ref setFaceCulling functions needs to be called OR
 	- \ref setConfiguration to set all FBO related flags in a single shot.
 
@@ -59,8 +62,9 @@ class IRenderNode {
 	constexpr static unsigned int c_maxTextureUnitOffsets = 16u;
 
 	const TextureManager& texMgr;
+	const FramebufferManager& fboMgr;
 	std::string name;
-	FramebufferPtr output;
+	FramebufferHandle output;
 	GLuint clearFlags;
 	bool depthTestEnabled;
 	bool depthUpdateEnabled;
@@ -128,7 +132,11 @@ protected:
 
 
 public:
-	IRenderNode(const TextureManager& texMgr, FramebufferPtr output, const std::string& name = "");
+	IRenderNode(
+		const TextureManager& texMgr,
+		const FramebufferManager& fboMgr,
+		FramebufferHandle output,
+		const std::string& name = "");
 	/*! \brief Core Node's method - starts Rendering
 		- Calls \ref preFrame method
 		- Calls pure virtual \ref draw method 
@@ -167,7 +175,7 @@ public:
 		- sets Face Culling (specified in \ref setFaceCulling)
 		- enables / disables Depth Test (specified in \ref enableDepthTest)
 	*/
-	void preFrame();
+	bool preFrame();
 private:
 };
 

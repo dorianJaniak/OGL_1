@@ -22,7 +22,6 @@ namespace dj {
 	class ObjectInstance;
 	class ObjectTransformation;
 	class Light;
-	class ShadowFramebuffer;
 	class Texture;
 	class Framebuffer;
 	class Camera;
@@ -45,10 +44,6 @@ namespace dj {
 	using ObjectTransformationWeakPtr = std::weak_ptr<ObjectTransformation>;
 	using LightPtr = std::shared_ptr<Light>;
 	using LightWeakPtr = std::weak_ptr<Light>;
-	using ShadowFramebufferPtr = std::shared_ptr<ShadowFramebuffer>;
-	using TexturePtr = std::shared_ptr<Texture>;
-	using ConstTexturePtr = std::shared_ptr<const Texture>;
-	using FramebufferPtr = std::shared_ptr<Framebuffer>;
 	using CameraPtr = std::shared_ptr<Camera>;
 
 	using ColorRGBA = std::array<float, 4u>;
@@ -94,17 +89,6 @@ namespace dj {
 		glm::vec2 neg;
 	};
 
-	/*!
-	*	\todo
-	*	- it is a helper class only (temporary)
-	*/
-	struct LightFramebufferBinding
-	{
-		dj::LightPtr light;
-		dj::FramebufferPtr fbo;
-	};
-
-
 	struct Log {
 		static constexpr unsigned cMaxLength = 1024;
 		char log[cMaxLength];
@@ -124,6 +108,11 @@ namespace dj {
 		static const char* failPrefix()
 		{
 			return ">>FAIL: ";
+		}
+
+		static const char* warnPrefix()
+		{
+			return ">Warn: ";
 		}
 
 		static const char* okPrefix()

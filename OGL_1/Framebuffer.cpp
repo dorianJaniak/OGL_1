@@ -1,69 +1,138 @@
 #include "Framebuffer.h"
 #include "TextureManager.h"
+#include "Enums/Converters.h"
 #include <iostream>
 using namespace dj;
 
-Framebuffer::Framebuffer() noexcept
-	: rboID(0u)
-	, width(0u)
-	, height(0u)
+GLuint Framebuffer::globalActiveID = 0u;
+
+Framebuffer::Framebuffer(const FramebufferDesc& desc) noexcept
+	: id(0u)
+	, desc(desc)
+	, attachments{}
 {
 	glGenFramebuffers(1, &id);
 }
 
-Framebuffer::Framebuffer(Framebuffer&&) noexcept
-	: id(id)
-	, rboID(rboID)
-	, width(width)
-	, height(height)
+Framebuffer::Framebuffer(const ResolutionDesc& desc) noexcept
+	: id(0u)
+	, desc{}
+	, attachments{}
 {
+	this->desc.resolution = desc;
+	glGenFramebuffers(1, &id);
+}
+
+Framebuffer::Framebuffer(Framebuffer&& f) noexcept
+	: id(f.id)
+	, desc{f.desc}
+	, attachments{f.attachments}
+{
+	f.id = 0u;
+	f.desc = FramebufferDesc{};
+}
+
+Framebuffer& Framebuffer::operator=(Framebuffer&& f) noexcept
+{
+	id = f.id;
+	desc = f.desc;
+	attachments = f.attachments;
+
+	f.id = 0u;
+	f.desc = FramebufferDesc{};
+	f.attachments = {};
+
+	return *this;
 }
 
 Framebuffer::~Framebuffer()
 {
-	textures.clear();
-	glDeleteFramebuffers(1, &id);
-	glDeleteRenderbuffers(1, &rboID);
-	std::cout << "Framebuffer destructed\n";
+	clear();
 }
 
-bool Framebuffer::assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment)
+bool Framebuffer::assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, FramebufferAttachment attachment)
 {
-	const std::optional<GLuint> texID = texMgr.getID(handle);
+	unsigned int index = toUnsigned(attachment);
+
+	assert(index < attachments.size() && "Enum converted to index should not be greater than attachments size");
+	if (attachments[index].has_value())
+	{
+		//! \todo Implement variant where texture attachment is reassigned
+		return false;
+	}
+
+	std::optional<TextureDesc> texDesc = texMgr.getDescriptor(handle);
+	if (!texDesc)
+	{
+		return false;
+	}
+
+	//! \todo Consider support for multiresolution attachments
+	assert(texDesc->resolution == desc.resolution && "Resolution mismatch between Texture and Framebuffer - it is not supported");
+
+	TextureAttachmentDesc texAttachDesc{};
+	texAttachDesc.glType = texDesc->glType;
+	texAttachDesc.sampling = texDesc->sampling;
+	texAttachDesc.format = texDesc->format;
+
+	FramebufferAttachmentDesc attachmentDesc{};
+	attachmentDesc.attachment = attachment;
+	attachmentDesc.type = FramebufferAttachmentType::Texture;
+	attachmentDesc.desc = texAttachDesc;
+
+	AttachmentBinding binding{};
+	binding.attachment = attachment;
+	binding.type = FramebufferAttachmentType::Texture;
+	binding.data = AttachmentTextureBinding{ handle };
+
+	std::optional<GLuint> texID = texMgr.getID(handle);
 	if (!texID)
 	{
 		return false;
 	}
 
-	std::optional<ResolutionDesc> res = texMgr.getResolution(handle);
-	assert(res && "In this case ResolutionDesc always should be returned");
-
-	if (width == 0u || height == 0u || width > res->width || height > res->height)
-	{
-		width = res->width;
-		height = res->height;
-	}
-
 	bind();
-	glFramebufferTexture(GL_FRAMEBUFFER, attachment, *texID, 0);
+	texMgr.bind(handle);
+	glFramebufferTexture(GL_FRAMEBUFFER, toGLenum(attachment), *texID, 0);
 
-	textures.push_back({ attachment, handle });
+	desc.attachments[index] = attachmentDesc;
+	attachments[index] = binding;
 
 	return true;
 }
 
-bool Framebuffer::genRenderbufferAttachment(GLenum attachment, GLenum internalFormat)
+bool Framebuffer::assignRenderbufferAttachment(FramebufferAttachment attachment, ColorFormatInDevice internalFormat)
 {
-	if (rboID != 0u || width == 0u || height == 0u)
+	unsigned int index = toUnsigned(attachment);
+
+	assert(index < attachments.size() && "Enum converted to index should not be greater than attachments size");
+	if (attachments[index].has_value())
 	{
+		//! \todo Implement variant where render buffer is reassigned
 		return false;
 	}
-	bind();
 
+	bind();
+	GLuint rboID = 0u;
 	glGenRenderbuffers(1, &rboID);
 	glBindRenderbuffer(GL_RENDERBUFFER, rboID);
-	glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rboID);
+	glRenderbufferStorage(GL_RENDERBUFFER, toGLenum(internalFormat), desc.resolution.width, desc.resolution.height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, toGLenum(attachment), GL_RENDERBUFFER, rboID);
+
+	RenderBufferAttachmentDesc rboDesc{};
+	rboDesc.internalFormat = internalFormat;
+
+	FramebufferAttachmentDesc attachmentDesc{};
+	attachmentDesc.attachment = attachment;
+	attachmentDesc.type = FramebufferAttachmentType::RenderBuffer;
+	attachmentDesc.desc = rboDesc;
+	desc.attachments[index] = attachmentDesc;
+
+	AttachmentBinding binding{};
+	binding.attachment = attachment;
+	binding.type = FramebufferAttachmentType::RenderBuffer;
+	binding.data = RenderBufferBinding{ rboID };
+	attachments[index] = binding;
 
 	return true;
 }
@@ -74,14 +143,19 @@ void Framebuffer::nullifyData()
 	glReadBuffer(GL_NONE);
 }
 
-void Framebuffer::bind()
+void Framebuffer::bind() const
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, id);
+	if (id != globalActiveID)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, id);
+		globalActiveID = id;
+	}
 }
 
 void Framebuffer::unbind()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0u);
+	globalActiveID = 0u;
 }
 
 GLenum Framebuffer::getFramebufferStatus()
@@ -89,25 +163,71 @@ GLenum Framebuffer::getFramebufferStatus()
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER);
 }
 
-std::optional<TextureHandle> Framebuffer::getTextureAttachment(GLenum attachment)
+std::optional<TextureHandle> Framebuffer::getTextureHandle(FramebufferAttachment attachment)
 {
-	for (const AttachmentTextureBinding& attachmentBinding : textures)
+	unsigned int index = toUnsigned(attachment);
+	assert(index < attachments.size() && "Enum converted to index should not be greater than attachments size");
+
+	if (!attachments[index].has_value())
 	{
-		if (attachmentBinding.attachment == attachment)
-		{
-			return attachmentBinding.texHandle;
-		}
+		return std::nullopt;
 	}
 
-	return std::nullopt;
+	if (attachments[index]->type != FramebufferAttachmentType::Texture)
+	{
+		return std::nullopt;
+	}
+
+	return std::get<AttachmentTextureBinding>(attachments[index]->data).texHandle;
 }
 
 unsigned int Framebuffer::getWidth() const
 {
-	return width;
+	return desc.resolution.width;
 }
 
 unsigned int Framebuffer::getHeight() const
 {
-	return height;
+	return desc.resolution.height;
+}
+
+void Framebuffer::clear()
+{
+	glDeleteFramebuffers(1, &id);
+
+	for (std::optional<AttachmentBinding>& att : attachments)
+	{
+		if (att)
+		{
+			if (att->type == FramebufferAttachmentType::RenderBuffer)
+			{
+				glDeleteRenderbuffers(1, &std::get<RenderBufferBinding>(att->data).rboID);
+			}
+		}
+
+		att = std::nullopt;
+	}
+
+	id = 0u;
+}
+
+GLuint Framebuffer::getID() const
+{
+	return id;
+}
+
+bool Framebuffer::verifyResolutionConsistency(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment) const
+{
+	std::optional<ResolutionDesc> res = texMgr.getResolution(handle);
+	assert(res && "In this case ResolutionDesc always should be returned");
+
+	bool resolutionConsistency = (res->width == desc.resolution.width
+		&& res->height != desc.resolution.height);
+
+	if (!resolutionConsistency)
+	{
+		std::cerr << Log::warnPrefix() << "Resolution of attachment: " << attachment << " has different resolution than Framebuffer\n";
+	}
+
+	return resolutionConsistency;
 }

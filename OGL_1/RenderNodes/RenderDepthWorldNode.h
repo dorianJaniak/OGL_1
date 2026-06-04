@@ -5,6 +5,7 @@
 namespace dj
 {
 class TextureManager;
+class FramebufferManager;
 } // namespace dj
 
 namespace dj
@@ -16,7 +17,14 @@ namespace dj
 class RenderDepthWorldNode : public IRenderWorldNode, public CameraNodeProperty
 {
 public:
-	RenderDepthWorldNode(const TextureManager& texMgr, FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name = "");
+	RenderDepthWorldNode(
+		const TextureManager& texMgr,
+		const FramebufferManager& fboMgr,
+		FramebufferHandle output,
+		CameraPtr camera,
+		GLuint ebo,
+		std::vector<dj::ObjectInstancePtr>& objectInstances,
+		const std::string& name = "");
 
 protected:
 	virtual void uboPerFrame() override;

@@ -1,11 +1,13 @@
 #pragma once
 #include "IRenderWorldNode.h"
 #include "CameraNodeProperty.h"
+#include "LightFramebufferBinding.h"
 #include "..\Definitions.h"
 
 namespace dj
 {
 class TextureManager;
+class FramebufferManager;
 } // namespace dj
 
 namespace dj
@@ -23,7 +25,13 @@ class RenderShadedWorldNode : public IRenderWorldNode, public CameraNodeProperty
 	const std::vector<dj::LightFramebufferBinding>& spotFBOs;
 	const std::vector<dj::LightFramebufferBinding>& pointFBOs;
 public:
-	RenderShadedWorldNode(const TextureManager& texMgr, FramebufferPtr output, CameraPtr camera, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances,
+	RenderShadedWorldNode(
+		const TextureManager& texMgr,
+		const FramebufferManager& fboMgr,
+		FramebufferHandle output,
+		CameraPtr camera,
+		GLuint ebo,
+		std::vector<dj::ObjectInstancePtr>& objectInstances,
 		const std::vector<dj::LightFramebufferBinding>& spotFBOs,
 		const std::vector<dj::LightFramebufferBinding>& pointFBOs,
 		std::vector<dj::LightPtr>& lights,

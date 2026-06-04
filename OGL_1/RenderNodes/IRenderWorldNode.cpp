@@ -3,8 +3,14 @@
 #include "../Program.h"
 using namespace dj;
 
-IRenderWorldNode::IRenderWorldNode(const TextureManager& texMgr, FramebufferPtr output, GLuint ebo, std::vector<dj::ObjectInstancePtr>& objectInstances, const std::string& name)
-	: IRenderNode(texMgr, output, name)
+IRenderWorldNode::IRenderWorldNode(
+	const TextureManager& texMgr,
+	const FramebufferManager& fboMgr,
+	FramebufferHandle output,
+	GLuint ebo,
+	std::vector<dj::ObjectInstancePtr>& objectInstances,
+	const std::string& name)
+	: IRenderNode(texMgr, fboMgr, output, name)
 	, objectInstances(objectInstances)
 	, ebo(ebo)
 	, customMaterial(nullptr)

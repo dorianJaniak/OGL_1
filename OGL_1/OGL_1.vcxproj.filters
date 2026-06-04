@@ -78,9 +78,6 @@
     <ClCompile Include="ObjectTransformation.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="ShadowFramebuffer.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="TGLTFLoader.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
@@ -120,12 +117,6 @@
     <ClCompile Include="TextureResource.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="TextureHandle.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureReferencesManager.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\GLWrapper.cpp">
       <Filter>Pliki źródłowe\Utils</Filter>
     </ClCompile>
@@ -143,6 +134,9 @@
     </ClCompile>
     <ClCompile Include="Time\TimeDrivenMovement.cpp">
       <Filter>Pliki źródłowe\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="FramebufferManager.cpp">
+      <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -186,9 +180,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="Predefinitions\PredefinedMeshes.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadowFramebuffer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="TGLTFLoader.h">
@@ -248,7 +239,7 @@
     <ClInclude Include="Descriptors\ResolutionDesc.h">
       <Filter>Pliki nagłówkowe\Descriptors</Filter>
     </ClInclude>
-    <ClInclude Include="Descriptors\TextureAttachmentDesc.h">
+    <ClInclude Include="Descriptors\FramebufferAttachmentDesc.h">
       <Filter>Pliki nagłówkowe\Descriptors</Filter>
     </ClInclude>
     <ClInclude Include="Descriptors\TextureDesc.h">
@@ -264,9 +255,6 @@
       <Filter>Pliki nagłówkowe\Utils</Filter>
     </ClInclude>
     <ClInclude Include="TextureResource.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureReferencesManager.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="Enums\TextureColorEnums.h">
@@ -310,6 +298,33 @@
     </ClInclude>
     <ClInclude Include="Time\TimeFlow.h">
       <Filter>Pliki nagłówkowe\Time</Filter>
+    </ClInclude>
+    <ClInclude Include="FramebufferHandle.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="FramebufferManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Handle.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="ReferencesManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="LightFramebufferBinding.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\FramebufferEnums.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\TextureAttachmentDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\Serialization.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\Verification.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

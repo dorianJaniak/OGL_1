@@ -1,6 +1,7 @@
 #pragma once
 #include "Utils.h"
 #include <GL/glew.h>
+#include <cstdint>
 
 namespace dj
 {
@@ -25,21 +26,21 @@ namespace dj
 	ENTRY_ENUM(LinearMipmapLinear,		GL_LINEAR_MIPMAP_LINEAR)
 
 // Section: Enum classes and their mapping definitions
-enum class TextureWrapping
+enum class TextureWrapping : uint8_t
 {
 #define ENTRY_ENUM(name, glenum) name,
 	TEXTURE_PARAMETER_WRAPPING_LIST
 #undef ENTRY_ENUM
 };
 
-enum class TextureFilteringMin
+enum class TextureFilteringMin : uint8_t
 {
 #define ENTRY_ENUM(name, glenum) name,
 	TEXTURE_PARAMETER_MIN_FILTER_LIST
 #undef ENTRY_ENUM
 };
 
-enum class TextureFilteringMag
+enum class TextureFilteringMag : uint8_t
 {
 #define ENTRY_ENUM(name, glenum) name,
 	TEXTURE_PARAMETER_MIN_FILTER_LIST

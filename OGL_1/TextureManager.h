@@ -1,5 +1,5 @@
 #pragma once
-#include "TextureReferencesManager.h"
+#include "ReferencesManager.h"
 #include "Utils/NonCopyableNonMovable.h"
 #include "TextureHandle.h"
 #include "TextureResource.h"
@@ -23,7 +23,7 @@ namespace dj
 * \todo consider if it is worth to track how many TextureManager objects are created 
 *	(NOTE: Current implementation is not safe for more than 1 instance)
 */
-class TextureManager : public TextureReferencesManager, private NonCopyable, private NonMovable
+class TextureManager : public HandleCreator<TextureManager>, public ReferencesManager<TextureManager>, private NonCopyable, private NonMovable
 {
 	//! \todo consider if TextureManager would benefit from having State (OnlyRead / Modifying)?
 	//enum class State
@@ -59,8 +59,7 @@ public:
 	unsigned int getCount() const;
 	unsigned int getSizeInVRAM() const;
 
-	// Check if Texture exists / check if TextureHandle is correct
-	bool exists(const TextureHandle& handle) const;
+	// Check if Handle is correct
 	static bool verifyTextureDescriptor(const TextureDesc& desc);
 
 	// Simplified access to TextureResources

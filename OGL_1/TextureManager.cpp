@@ -205,11 +205,6 @@ unsigned int TextureManager::getSizeInVRAM() const
 	return 0u;
 }
 
-bool TextureManager::exists(const TextureHandle& handle) const
-{
-	return (handle.getIndex() < textures.size() && handle.getGeneration() == generations[handle.getIndex()]);
-}
-
 bool TextureManager::verifyTextureDescriptor(const TextureDesc& desc)
 {
 	return (desc.resolution.width > 0u && desc.resolution.height > 0u);
@@ -346,7 +341,7 @@ bool TextureManager::verifyConsistency() const
 		// Verify if freeSlots points to cells in which textures truly does not exist
 		if (indexOk)
 		{
-			freeSlotsPointOk &= (referencesCount[freeSlot] == 0u && textures[freeSlot].id == 0u);
+			freeSlotsPointOk &= (referencesCount[freeSlot] == 0u && textures[freeSlot].getID() == 0u);
 		}
 	}
 
@@ -428,7 +423,7 @@ std::optional<TextureHandle> TextureManager::addTexture(TextureResource&& res, c
 		}
 	}
 
-	return TextureHandle(this, index, generations[index]);
+	return createHandle(this, index, generations[index]);
 }
 
 std::optional<unsigned int> TextureManager::popFirstFreeSlot()
