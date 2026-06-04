@@ -18,13 +18,37 @@ The nicest part of the project is recently redesigned Texture management system,
 * [TextureDescriptor](OGL_1/Descriptors/TextureDesc.h),
 * [Handle](OGL_1/Handle.h)
 
-Texture Management is a good example of the engine's future direction. It ensures good memory locality (cache locality).
+Texture Management is a good example of the engine's future direction. It ensures good memory locality (CPU's cache locality).
 
 Also worth noting:
 * [IRenderNode](OGL_1/RenderNodes/IRenderNode.h) class,
 * [QualitySettings](OGL_1/QualitySettings.h) class,
 * [Program](OGL_1/Program.h) class,
 * all headers in [Enums](OGL_1/Enums/).
+
+# Goals
+
+As said above, main purpose of implementing this (yet another) graphic engine is self-improvement in: OpenGL, modern C++, efficient code writing.
+
+The following functionality is planned to be implemented in the future:
+* loading the scene from GLTF file,
+* bindless textures,
+* uniform arrays,
+* error logging system,
+* LOD system,
+* simple objects movement (without using bone system),
+* resource management (framebuffers, textures, objects, object instances, materials, etc.),
+* rendering graph based on nodes and passes,
+* debug rendering layer,
+* alpha blending and transparency,
+* cascaded shadows,
+* runtime shader generation,
+* pre-rasterization object culling (avoiding draw calls for objects behind the camera),
+* depth of field effect,
+* bloom effect (and other simple fullscreen effects),
+* reflection probes,
+* HDR,
+* volumetric effects.
 
 # Third party:
 
