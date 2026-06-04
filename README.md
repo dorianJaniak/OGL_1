@@ -35,6 +35,7 @@ The following functionality is planned to be implemented in the future:
 * bindless textures,
 * uniform arrays,
 * error logging system,
+* buffer object class,
 * LOD system,
 * simple objects movement (without using bone system),
 * resource management (framebuffers, textures, objects, object instances, materials, etc.),
