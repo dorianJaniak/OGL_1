@@ -1,8 +1,8 @@
 #pragma once
-#include "TextureAttachmentDesc.h"
-#include "RenderBufferAttachmentDesc.h"
 #include "ResolutionDesc.h"
-#include <vector>
+#include "FramebufferAttachmentDesc.h"
+#include <array>
+#include <optional>
 
 namespace dj
 {
@@ -10,8 +10,7 @@ namespace dj
 struct FramebufferDesc
 {
 	ResolutionDesc resolution;
-	std::vector<TextureAttachmentDesc> textureAttachments;
-	std::vector<RenderBufferAttachmentDesc> renderBufferAttachments;
+	std::array<std::optional<FramebufferAttachmentDesc>, std::size(framebufferAttachmentsMapping)> attachments;
 };
 
 } // namespace dj

@@ -1,4 +1,5 @@
 #pragma once
+#include "Enums/TextureColorEnums.h"
 #include <GL/glew.h>
 
 namespace dj
@@ -6,8 +7,7 @@ namespace dj
 
 struct RenderBufferAttachmentDesc
 {
-	GLenum attachment;
-	GLenum internalFormat;
+	ColorFormatInDevice internalFormat;
 };
 
 } // namespace dj

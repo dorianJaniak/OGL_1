@@ -27,7 +27,7 @@ public:
 	FramebufferManager() noexcept = default;
 	~FramebufferManager() = default;
 
-	std::optional<FramebufferHandle> createOnlyFramebuffer(const FramebufferDesc& desc);
+	std::optional<FramebufferHandle> createOnlyFramebuffer(const ResolutionDesc& desc);
 	std::optional<FramebufferHandleSet> createFramebufferAndTextures(TextureManager& texMgr, const FramebufferDesc& desc);
 
 	// Operate on Framebuffer
@@ -48,6 +48,7 @@ public:
 	// Debugging methods
 	bool verifyConsistency() const;
 	unsigned int getCellsCount() const;
+	void printFramebuffers() const;
 
 private:
 	unsigned int deleteUnused();

@@ -2,6 +2,7 @@
 #include "Utils/NonCopyableNonMovable.h"
 #include "Definitions.h"
 #include "TextureHandle.h"
+#include "Descriptors/FramebufferDesc.h"
 #include <GL/glew.h>
 #include <vector>
 #include <optional>
@@ -36,44 +37,35 @@ class Framebuffer : private NonCopyable
 
 	struct AttachmentTextureBinding
 	{
-		GLenum attachment;
 		TextureHandle texHandle;
+	};
+
+	struct RenderBufferBinding
+	{
+		GLuint rboID;
+	};
+
+	struct AttachmentBinding
+	{
+		FramebufferAttachment attachment;
+		FramebufferAttachmentType type;
+		std::variant<RenderBufferBinding, AttachmentTextureBinding> data;
 	};
 
 	static GLuint globalActiveID;
 	GLuint id;
-	GLuint rboID;
-	unsigned int width;
-	unsigned int height;
-	std::vector<AttachmentTextureBinding> textures;
+	std::array<std::optional<AttachmentBinding>, std::size(framebufferAttachmentsMapping)> attachments;
+	FramebufferDesc desc;
 
-	// std::vector<const dj::ConstRenderBuffersWeakPtr> &renderbuffers;
 public:
-	Framebuffer() noexcept;
+	Framebuffer(const FramebufferDesc& desc) noexcept;
+	Framebuffer(const ResolutionDesc& desc) noexcept;
 	Framebuffer(Framebuffer&&) noexcept;
 	Framebuffer& operator=(Framebuffer&&) noexcept;
 	~Framebuffer();
 
-	/*! \brief Adds new texture attachment to Framebuffer.
-	
-		\param[in] texMgr needed in order to get Texture descriptor
-		\param[in] tex TextureHandle to texture attachment (supports types: Texture2D and TextureCube)
-		\param[in] attachment Attachment point in FBO (for example: GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT)
-	*/
-	bool assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment);
-	//bool addRenderBufferAttachment(GLenum attachment);
-
-	/*! \brief Adds new Render Buffer Attachment to Framebuffer.
-	
-		Currently it supports only single RBO assigned to Framebuffer.
-		It won't add when trying to add another RBO object. 
-		Needs to be called after \ref assignTextureAttachment method, because
-		it requires resolution settings.
-
-		\param[in] attachment Attachment point in FBO (for example: GL_DEPTH_STENCIL_ATTACHMENT)
-		\param[in] internalFormat Attachment format for RBO (for example: GL_DEPTH24_STENCIL)
-	*/
-	bool genRenderbufferAttachment(GLenum attachment, GLenum internalFormat);
+	bool assignTextureAttachment(const TextureManager& texMgr, const TextureHandle& handle, FramebufferAttachment attachment);
+	bool assignRenderbufferAttachment(FramebufferAttachment attachment, ColorFormatInDevice internalFormat);
 
 	void nullifyData();
 	void bind() const;
@@ -85,7 +77,7 @@ public:
 		instance. Otherwise, it may receive status of another Framebuffer. 
 	*/
 	static GLenum getFramebufferStatus();
-	std::optional<TextureHandle> getTextureAttachment(GLenum attachment);
+	std::optional<TextureHandle> getTextureHandle(FramebufferAttachment attachment);
 	unsigned int getWidth() const;
 	unsigned int getHeight() const;
 
@@ -97,6 +89,8 @@ private:
 	- Consider other solution to avoid passing OpenGL Framebuffer ID (like RenderBackend class which is declared here as a friend)
 	*/
 	GLuint getID() const;
+
+	bool verifyResolutionConsistency(const TextureManager& texMgr, const TextureHandle& handle, GLenum attachment) const;
 };
 
 } // namespace dj

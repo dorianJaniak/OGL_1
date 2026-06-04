@@ -1,62 +1,79 @@
 #include "FramebufferManager.h"
 #include "Descriptors/TextureDesc.h"
 #include "TextureManager.h"
+#include "Enums/Verification.h"
+#include "Enums/Serialization.h"
 #include <iostream>
 using namespace dj;
 
-std::optional<FramebufferHandle> FramebufferManager::createOnlyFramebuffer(const FramebufferDesc& desc)
+std::optional<FramebufferHandle> FramebufferManager::createOnlyFramebuffer(const ResolutionDesc& desc)
 {
-	Framebuffer fbo;
+	Framebuffer fbo(desc);
 	return addFramebuffer(std::move(fbo), {});
 }
 
 std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndTextures(TextureManager& texMgr, const FramebufferDesc& desc)
 {
-	Framebuffer fbo;
+	Framebuffer fbo(desc);
 
 	std::vector<TextureHandle> texHandles;
-	texHandles.reserve(desc.textureAttachments.size());
-		
-	for (const TextureAttachmentDesc& attachmentDesc : desc.textureAttachments)
+	texHandles.reserve(desc.attachments.size());
+
+	fbo.bind();
+
+	for (const std::optional<FramebufferAttachmentDesc>& attachmentDesc : desc.attachments)
 	{
-		TextureDesc texDesc{};
-		texDesc.glType = attachmentDesc.glType;
-		texDesc.resolution = desc.resolution;
-		texDesc.sampling = attachmentDesc.sampling;
-		texDesc.format = attachmentDesc.format;
-		texDesc.mipmaps = false;
-
-		std::optional<TextureHandle> tex = texMgr.createEmptyTexture(texDesc);
-
-		if (!tex)
+		if (attachmentDesc)
 		{
-			std::cerr << "Could not create empty Texture\n";
-			return std::nullopt;
-		}
+			if (attachmentDesc->type == FramebufferAttachmentType::Texture)
+			{
+				const TextureAttachmentDesc& texAttachDesc = std::get<TextureAttachmentDesc>(attachmentDesc->desc);
 
-		if (!fbo.assignTextureAttachment(texMgr, *tex, attachmentDesc.attachment))
-		{
-			std::cerr << "Could not assign Texture Attachment\n";
-			return std::nullopt;
-		}
+				TextureDesc texDesc{};
+				texDesc.glType = texAttachDesc.glType;
+				texDesc.resolution = desc.resolution;
+				texDesc.sampling = texAttachDesc.sampling;
+				texDesc.format = texAttachDesc.format;
+				texDesc.mipmaps = false;
 
-		texHandles.push_back(*tex);
+				std::optional<TextureHandle> tex = texMgr.createEmptyTexture(texDesc);
+
+				if (!tex)
+				{
+					std::cerr << "Could not create empty Texture\n";
+					return std::nullopt;
+				}
+
+				if (!fbo.assignTextureAttachment(texMgr, *tex, attachmentDesc->attachment))
+				{
+					std::cerr << "Could not assign Texture Attachment\n";
+					return std::nullopt;
+				}
+
+				texHandles.push_back(*tex);
+			}
+			else if (attachmentDesc->type == FramebufferAttachmentType::RenderBuffer)
+			{
+				const RenderBufferAttachmentDesc& rbAttachDesc = std::get<RenderBufferAttachmentDesc>(attachmentDesc->desc);
+
+				if (!fbo.assignRenderbufferAttachment(attachmentDesc->attachment, rbAttachDesc.internalFormat))
+				{
+					std::cerr << "Could not create Render Buffer Attachment\n";
+					return std::nullopt;
+				}
+			}
+		}
 	}
 
-	for (const RenderBufferAttachmentDesc& attachmentDesc : desc.renderBufferAttachments)
+	if (GLenum status = fbo.getFramebufferStatus(); !toBool<FramebufferStatusContext>(status))
 	{
-		if (!fbo.genRenderbufferAttachment(attachmentDesc.attachment, attachmentDesc.internalFormat))
-		{
-			std::cerr << "Could not create Render Buffer Attachment\n";
-			return std::nullopt;
-		}
+		std::cerr << "Framebuffer status incorrect: " << toString(status) << std::endl;
+		return std::nullopt;
 	}
 
-	fbo.getFramebufferStatus();
 	fbo.unbind();
 
 	std::optional<FramebufferHandle> handle = addFramebuffer(std::move(fbo), desc);
-
 	if (!handle)
 	{
 		std::cerr << "Could not add created Framebuffer\n";
@@ -170,6 +187,23 @@ bool FramebufferManager::verifyConsistency() const
 unsigned int FramebufferManager::getCellsCount() const
 {
 	return static_cast<unsigned int>(framebuffers.size());
+}
+
+void FramebufferManager::printFramebuffers() const
+{
+	for (const Framebuffer& fbo : framebuffers)
+	{
+		std::cout << "FBO Res: " << fbo.desc.resolution.width << ", " << fbo.desc.resolution.height << std::endl;
+
+		for (unsigned int i = 0; i < std::size(framebufferAttachmentsMapping); ++i)
+		{
+			if (fbo.attachments[i].has_value())
+			{
+				std::cout << "  Has attachment: " << static_cast<unsigned int>(fbo.attachments[i]->attachment)
+				<< ", type: " << static_cast<unsigned int>(fbo.attachments[i]->type) << std::endl;
+			}
+		}
+	}
 }
 
 

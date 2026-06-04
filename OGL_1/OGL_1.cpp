@@ -35,6 +35,7 @@
 #include "Time/TimeDrivenMovement.h"
 #include "Time/PerFrameUpdates.h"
 #include "Time/OccurrenceFrequency.h"
+#include "Enums/Converters.h"
 
 #include <iostream>
 #include <chrono>
@@ -84,8 +85,6 @@ void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMo
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
 
 // Helpers - Debug
-bool checkFramebufferStatus(GLenum status);
-bool verifyFramebufferStatus(GLenum status);
 void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period);
 
 // Helpers - Render
@@ -348,12 +347,14 @@ int main()
 	dj::LinearUpdate light3RotY(tdm, 180.0f, 120.0f);
 
 	// STAGE XX :::: Render Nodes creation
+	fboMgr.printFramebuffers();
 	std::vector<dj::ObjectInstancePtr> skyboxObjectInstances;
 	{
 		dj::ObjectInstancePtr skyboxCubeObjInst = std::make_shared<dj::ObjectInstance>(objects.at(3u), true);
 		skyboxCubeObjInst->setMaterial(materials.at(2u));
 		skyboxObjectInstances.push_back(skyboxCubeObjInst);
 	}
+
 	// VARIANT 1
 	//dj::RenderSkyboxWorldNode skyboxNode{ texMgr, fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
 	//skyboxNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
@@ -979,12 +980,7 @@ bool createShadows(dj::TextureManager& texMgr,
 		{
 			std::cout << "Creating Framebuffer for 2D Shadow\n";
 
-			dj::FramebufferDesc desc{};
-			desc.resolution.width = shadow2DRes;
-			desc.resolution.height = shadow2DRes;
-
 			dj::TextureAttachmentDesc texAttachDesc{};
-			texAttachDesc.attachment = GL_DEPTH_ATTACHMENT;
 			texAttachDesc.glType = dj::TextureType::Texture2D;
 			texAttachDesc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
 			texAttachDesc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
@@ -994,7 +990,15 @@ bool createShadows(dj::TextureManager& texMgr,
 			texAttachDesc.sampling.wrapS = dj::TextureWrapping::ClampToBorder;
 			texAttachDesc.sampling.wrapT = dj::TextureWrapping::ClampToBorder;
 
-			desc.textureAttachments.push_back(texAttachDesc);
+			dj::FramebufferAttachmentDesc fboAttachDesc{};
+			fboAttachDesc.attachment = dj::FramebufferAttachment::Depth;
+			fboAttachDesc.type = dj::FramebufferAttachmentType::Texture;
+			fboAttachDesc.desc = texAttachDesc;
+
+			dj::FramebufferDesc desc{};
+			desc.resolution.width = shadow2DRes;
+			desc.resolution.height = shadow2DRes;
+			desc.attachments[dj::toUnsigned(dj::FramebufferAttachment::Depth)] = fboAttachDesc;
 
 			std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
 			if (!handleSet || handleSet->texHandles.size() == 0u)
@@ -1005,20 +1009,13 @@ bool createShadows(dj::TextureManager& texMgr,
 
 			texMgr.setBorderColor(handleSet->texHandles[0], {1.0f, 1.0f, 1.0f, 1.0f});
 
-			//ok &= verifyFramebufferStatus(fbo->getFramebufferStatus());
-
 			spotFBOs.push_back({light, *handleSet});
 		}
 		else if (light->getType() == dj::Light::Type::Point)
 		{
 			std::cout << "Creating Framebuffer for Cubemap Shadow\n";
 
-			dj::FramebufferDesc desc{};
-			desc.resolution.width = shadowCubeRes;
-			desc.resolution.height = shadowCubeRes;
-
 			dj::TextureAttachmentDesc texAttachDesc{};
-			texAttachDesc.attachment = GL_DEPTH_ATTACHMENT;
 			texAttachDesc.glType = dj::TextureType::TextureCube;
 			texAttachDesc.format.inGPUColorFormat = dj::ColorFormatInDevice::Depth;
 			texAttachDesc.format.sourceColorFormat = dj::ColorFormatInSource::Depth;
@@ -1029,7 +1026,15 @@ bool createShadows(dj::TextureManager& texMgr,
 			texAttachDesc.sampling.wrapT = dj::TextureWrapping::ClampToEdge;
 			texAttachDesc.sampling.wrapR = dj::TextureWrapping::ClampToEdge;
 
-			desc.textureAttachments.push_back(texAttachDesc);
+			dj::FramebufferAttachmentDesc fboAttachDesc{};
+			fboAttachDesc.attachment = dj::FramebufferAttachment::Depth;
+			fboAttachDesc.type = dj::FramebufferAttachmentType::Texture;
+			fboAttachDesc.desc = texAttachDesc;
+
+			dj::FramebufferDesc desc{};
+			desc.resolution.width = shadowCubeRes;
+			desc.resolution.height = shadowCubeRes;
+			desc.attachments[dj::toUnsigned(dj::FramebufferAttachment::Depth)] = fboAttachDesc;
 
 			std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
 			if (!handleSet || handleSet->texHandles.size() == 0u)
@@ -1037,8 +1042,6 @@ bool createShadows(dj::TextureManager& texMgr,
 				std::cerr << dj::Log::failPrefix() << "Could not create texture for Pointlight\n";
 				return false;
 			}
-
-			//ok &= verifyFramebufferStatus(cubeDepthFBO->getFramebufferStatus());
 
 			pointFBOs.push_back({ light, *handleSet });
 		}
@@ -1104,12 +1107,7 @@ std::optional<dj::FramebufferHandleSet> createMainFramebuffer(
 	const dj::MainWindow& mw,
 	dj::QualitySettings<4u>& quality)
 {
-	dj::FramebufferDesc desc{};
-	desc.resolution.width = mw.getWidth();
-	desc.resolution.height = mw.getHeight();
-
 	dj::TextureAttachmentDesc texAttDesc{};
-	texAttDesc.attachment = GL_COLOR_ATTACHMENT0;
 	texAttDesc.glType = dj::TextureType::Texture2D;
 	texAttDesc.sampling.minFilter = dj::TextureFilteringMin::Nearest;
 	texAttDesc.sampling.magFilter = dj::TextureFilteringMag::Nearest;
@@ -1121,20 +1119,26 @@ std::optional<dj::FramebufferHandleSet> createMainFramebuffer(
 	texAttDesc.format.sourceColorFormat = dj::ColorFormatInSource::RGB;
 	texAttDesc.format.sourceValueType = dj::PixelDataTypeInSource::UnsignedByte;
 
-	dj::RenderBufferAttachmentDesc renderAttDesc{};
-	renderAttDesc.attachment = GL_DEPTH_STENCIL_ATTACHMENT;
-	renderAttDesc.internalFormat = GL_DEPTH24_STENCIL8;
+	dj::RenderBufferAttachmentDesc rboAttDesc{};
+	rboAttDesc.internalFormat = dj::ColorFormatInDevice::Depth24_Stencil8;
 
-	desc.textureAttachments.push_back(texAttDesc);
-	desc.renderBufferAttachments.push_back(renderAttDesc);
+	dj::FramebufferAttachmentDesc fboTexAttDesc{};
+	fboTexAttDesc.attachment = dj::FramebufferAttachment::Color0;
+	fboTexAttDesc.type = dj::FramebufferAttachmentType::Texture;
+	fboTexAttDesc.desc = texAttDesc;
+
+	dj::FramebufferAttachmentDesc fboRboAttDesc{};
+	fboRboAttDesc.attachment = dj::FramebufferAttachment::DepthStencil;
+	fboRboAttDesc.type = dj::FramebufferAttachmentType::RenderBuffer;
+	fboRboAttDesc.desc = rboAttDesc;
+
+	dj::FramebufferDesc desc{};
+	desc.resolution.width = mw.getWidth();
+	desc.resolution.height = mw.getHeight();
+	desc.attachments[dj::toUnsigned(dj::FramebufferAttachment::Color0)] = fboTexAttDesc;
+	desc.attachments[dj::toUnsigned(dj::FramebufferAttachment::DepthStencil)] = fboRboAttDesc;;
 
 	std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
-
-	//	if (!verifyFramebufferStatus(fbo->getFramebufferStatus()))
-	//	{
-	//		mw.terminate();
-	//		return -1;
-	//	}
 
 	return handleSet;
 }
@@ -1216,44 +1220,6 @@ void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMo
 	}
 
 	camera.updateView();
-}
-
-bool checkFramebufferStatus(GLenum framebufferFlag)
-{
-	GLenum status = glCheckFramebufferStatus(framebufferFlag);
-	return verifyFramebufferStatus(status);
-}
-
-bool verifyFramebufferStatus(GLenum status)
-{
-	dj::Log log;
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		std::string errorMsg = std::string("Could not create Framebuffer. Error Code: ");
-		std::string errorCode;
-		switch (status)
-		{
-		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"; break;
-		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"; break;
-		case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"; break;
-		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER"; break;
-		case GL_FRAMEBUFFER_UNSUPPORTED: errorCode = "GL_FRAMEBUFFER_UNSUPPORTED"; break;
-		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"; break;
-		case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS: errorCode = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"; break;
-		case GL_FRAMEBUFFER_UNDEFINED: errorCode = "GL_FRAMEBUFFER_UNDEFINED"; break;
-		case GL_INVALID_ENUM: errorCode = "GL_INVALID_ENUM"; break;
-		default: errorCode = std::to_string(status);
-		}
-		errorMsg += errorCode;
-		log.ok = false;
-		log.print(errorMsg.c_str());
-
-		return false;
-	}
-
-	log.ok = true;
-	log.print("Succesfully created Framebuffer");
-	return true;
 }
 
 void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period)

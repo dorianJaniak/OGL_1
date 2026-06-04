@@ -239,7 +239,7 @@
     <ClInclude Include="Descriptors\ResolutionDesc.h">
       <Filter>Pliki nagłówkowe\Descriptors</Filter>
     </ClInclude>
-    <ClInclude Include="Descriptors\TextureAttachmentDesc.h">
+    <ClInclude Include="Descriptors\FramebufferAttachmentDesc.h">
       <Filter>Pliki nagłówkowe\Descriptors</Filter>
     </ClInclude>
     <ClInclude Include="Descriptors\TextureDesc.h">
@@ -313,6 +313,18 @@
     </ClInclude>
     <ClInclude Include="LightFramebufferBinding.h">
       <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\FramebufferEnums.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Descriptors\TextureAttachmentDesc.h">
+      <Filter>Pliki nagłówkowe\Descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\Serialization.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\Verification.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
