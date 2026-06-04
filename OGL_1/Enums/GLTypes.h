@@ -1,6 +1,7 @@
 #pragma once
 #include "Enums/Utils.h"
 #include <GL/glew.h>
+#include <cstdint>
 
 namespace dj
 {
@@ -18,14 +19,14 @@ namespace dj
 	ENTRY_ENUM(NegativeZ,	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z)
 
 // Section: Enum classes and their mapping definitions
-enum class TextureType
+enum class TextureType : uint8_t
 {
 #define ENTRY_ENUM(name, glenum) name,
 	TEXTURE_TYPE_LIST
 #undef ENTRY_ENUM
 };
 
-enum class TextureCubeSide
+enum class TextureCubeSide : uint8_t
 {
 #define ENTRY_ENUM(name, glenum) name,
 	TEXTURE_CUBE_SIDE_LIST

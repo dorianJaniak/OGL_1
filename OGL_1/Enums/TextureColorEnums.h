@@ -1,6 +1,7 @@
 #pragma once
 #include "Utils.h"
 #include <GL/glew.h>
+#include <cstdint>
 
 namespace dj
 {
@@ -17,7 +18,8 @@ namespace dj
 	ENTRY_CFID(SRGB_ALPHA,	GL_SRGB_ALPHA,		32u) \
 	ENTRY_CFID(RGB16F,		GL_RGB16F,			48u) \
 	ENTRY_CFID(Depth,		GL_DEPTH_COMPONENT,	32u) \
-	ENTRY_CFID(Depth16,		GL_DEPTH_COMPONENT16, 16u)
+	ENTRY_CFID(Depth16,		GL_DEPTH_COMPONENT16, 16u) \
+	ENTRY_CFID(Depth24_Stencil8, GL_DEPTH24_STENCIL8, 32u)
 
 #define COLOR_FORMAT_IN_SOURCE_LIST \
 	ENTRY_CFIS(R,		GL_RED) \
@@ -41,7 +43,7 @@ namespace dj
 	ENTRY_PDTIS(Float,		GL_FLOAT)
 
 // Section: Enum classes and their mapping definitions
-enum class ColorFormatInDevice
+enum class ColorFormatInDevice : uint8_t
 {
 #define ENTRY_CFID(name, glenum, bitSize) name,
 	COLOR_FORMAT_IN_DEVICE_LIST
@@ -62,7 +64,7 @@ constexpr unsigned int colorFormatInDeviceBitSizeMapping[] =
 #undef ENTRY_CFID
 };
 
-enum class ColorFormatInSource
+enum class ColorFormatInSource : uint8_t
 {
 #define ENTRY_CFIS(name, glenum) name,
 	COLOR_FORMAT_IN_SOURCE_LIST
@@ -76,7 +78,7 @@ constexpr GLenum colorFormatInSourceMapping[] =
 #undef ENTRY_CFIS
 };
 
-enum class PixelDataTypeInSource
+enum class PixelDataTypeInSource : uint8_t
 {
 #define ENTRY_PDTIS(name, glenum) name,
 	PIXEL_DATA_TYPE_IN_SOURCE
