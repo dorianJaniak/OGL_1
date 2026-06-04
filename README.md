@@ -28,9 +28,9 @@ Also worth noting:
 
 # Goals
 
-As said above, main purpose of implementing this (yet another) graphic engine is self-improvement in: OpenGL, modern C++, efficient code writing.
+As mentioned above, the main purpose of implementing this (yet another) graphic engine is self-improvement in OpenGL, modern C++ (C++ 11/14/17) and efficient code writing.
 
-The following functionality is planned to be implemented in the future:
+The following features are planned for future implementation:
 * loading the scene from GLTF file,
 * bindless textures,
 * uniform arrays,
