@@ -10,7 +10,7 @@ The goal is not to build an engine that competes with established commercial sol
 
 The ugliest part of the project is main source file: [OGL_1.cpp](OGL_1/OGL_1.cpp). It is pure evil.
 
-## If you look for the nicest part
+# The Nice Part
 
 The nicest part of the project is recently redesigned Texture management system, which includes classes:
 * [TextureManager](OGL_1/TextureManager.h),
