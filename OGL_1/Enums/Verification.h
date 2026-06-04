@@ -8,7 +8,7 @@ namespace dj
 // Section: Context
 class FramebufferStatusContext;
 
-
+// Section: Definitions
 #define VERIFICATION_FRAMEBUFFER_STATUS_LIST \
 	STATUS_GLENUM(GL_FRAMEBUFFER_COMPLETE,						true) \
 	STATUS_GLENUM(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT,			false) \
@@ -20,7 +20,6 @@ class FramebufferStatusContext;
 	STATUS_GLENUM(GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS,		false) \
 	STATUS_GLENUM(GL_FRAMEBUFFER_UNDEFINED,						false) \
 	STATUS_GLENUM(GL_INVALID_ENUM,								false)
-
 
 // Section: Mapping functions
 #define STATUS_GLENUM(glen, status) case glen: return status;

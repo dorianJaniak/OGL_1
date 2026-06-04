@@ -46,10 +46,4 @@ unsigned int toUnsigned(T value)
 	return static_cast<unsigned int>(value);
 }
 
-template <class T>
-unsigned int toU(T value)
-{
-	return static_cast<unsigned int>(value);
-}
-
 } // namespace dj
