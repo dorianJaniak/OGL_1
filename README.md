@@ -1,4 +1,4 @@
-# Disclaimer: The Ugly Part
+# Note: The Ugly Part
 
 The engine is currently in an early stage of intensive development and significant architectural refactoring. Initially, the project was created primarily as a way to familiarize myself with OpenGL and was never intended for public release. Over time, I decided to continue developing it as a long-term learning project and a platform for experimenting with new ideas.
 
