@@ -27,7 +27,7 @@ void Logger::log(const ILogger::ILog& event)
 	const char* prefix = getPrefix(event.level);
 	std::ostream& stream = getStream(event.level);
 
-	stream << prefix;
+	stream << prefix << ' ';
 	if (event.code != 0u)
 	{
 		stream << event.code << ':' ;
@@ -44,11 +44,11 @@ const char* Logger::getPrefix(LogLevel level)
 {
 	switch (level)
 	{
-	case LogLevel::Debug: return "D:";
-	case LogLevel::Info: return "I:";
-	case LogLevel::Warning: return "W:";
-	case LogLevel::Error: return "ERR:";
-	case LogLevel::Critical: return "FAIL:";
+	case LogLevel::Debug: return "D-";
+	case LogLevel::Info: return "I-";
+	case LogLevel::Warning: return "W-";
+	case LogLevel::Error: return "ERR-";
+	case LogLevel::Critical: return "FAIL-";
 	}
 
 	return "[-]";
