@@ -8,7 +8,6 @@ using namespace dj;
 FramebufferManager::FramebufferManager(std::shared_ptr<ILogger> logger) noexcept
 	: NamedLoggingInstance(logger, "FramebufferManager")
 {
-
 }
 
 std::optional<FramebufferHandle> FramebufferManager::createOnlyFramebuffer(const ResolutionDesc& desc)

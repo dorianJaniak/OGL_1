@@ -3,7 +3,6 @@
 #include "Enums/Converters.h"
 #include "Logging/ILogger.h"
 #include "Logging/Log.h"
-#include <format>
 using namespace dj;
 
 GLuint Framebuffer::globalActiveID = 0u;
