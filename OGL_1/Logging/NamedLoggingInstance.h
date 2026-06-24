@@ -6,28 +6,28 @@
 namespace dj
 {
 
-	class NamedLoggingInstance : public Name, protected LoggingInstance
+class NamedLoggingInstance : public Name, protected LoggingInstance
+{
+public:
+	explicit NamedLoggingInstance(std::shared_ptr<ILogger> logger, const std::string& name = "") noexcept
+		: Name(name)
+		, LoggingInstance(*this, logger)
+	{ }
+
+	NamedLoggingInstance(const NamedLoggingInstance& nli) noexcept
+		: Name(nli.getName())
+		, LoggingInstance(*this, nli.logger)
+	{ }
+
+	NamedLoggingInstance(NamedLoggingInstance&& nli) noexcept
+		: Name(nli.getName())
+		, LoggingInstance(*this, nli.logger)
 	{
-	public:
-		explicit NamedLoggingInstance(std::shared_ptr<ILogger> logger, const std::string& name = "") noexcept
-			: Name(name)
-			, LoggingInstance(*this, logger)
-		{ }
+		nli.setName("");
+	}
 
-		NamedLoggingInstance(const NamedLoggingInstance& nli) noexcept
-			: Name(nli.getName())
-			, LoggingInstance(*this, nli.logger)
-		{ }
-
-		NamedLoggingInstance(NamedLoggingInstance&& nli) noexcept
-			: Name(nli.getName())
-			, LoggingInstance(*this, nli.logger)
-		{
-			nli.setName("");
-		}
-
-		NamedLoggingInstance& operator=(const NamedLoggingInstance&) = delete;
-		NamedLoggingInstance& operator=(NamedLoggingInstance&&) = delete;
-	};
+	NamedLoggingInstance& operator=(const NamedLoggingInstance&) = delete;
+	NamedLoggingInstance& operator=(NamedLoggingInstance&&) = delete;
+};
 
 } // namespace dj
