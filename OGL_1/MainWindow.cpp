@@ -1,11 +1,12 @@
 #include "MainWindow.h"
-#include <iostream>
+#include "Enums/LogCodes.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 using namespace dj;
 
-MainWindow::MainWindow(unsigned int width, unsigned int height, float aspectRatio)
-	: window(nullptr)
+MainWindow::MainWindow(std::shared_ptr<ILogger> logger, unsigned int width, unsigned int height, float aspectRatio)
+	: NamedLoggingInstance(logger, "MainWindow")
+	, window(nullptr)
 	, width(width)
 	, height(height)
 	, aspectRatio(aspectRatio)
@@ -25,7 +26,7 @@ bool MainWindow::initGLFW(int majorGLVer, int minorGLVer, const char* name)
 
 	if (!window)
 	{
-		std::cerr << "Could not create GLFW Window\n";
+		log(LogLevel::Critical, LogCode::MainWindow_GLFW_Fail, "Could not create GLFW Window");
 		terminate();
 		return false;
 	}
@@ -34,7 +35,7 @@ bool MainWindow::initGLFW(int majorGLVer, int minorGLVer, const char* name)
 
 	if (glewInit() != GLEW_OK)
 	{
-		std::cerr << "Could not init GLEW\n";
+		log(LogLevel::Critical, LogCode::MainWindow_GLEW_Fail, "Could not init GLEW");
 		terminate();
 		return false;
 	}

@@ -1,5 +1,4 @@
 #include "TGLTFLoader.h"
-#include <iostream>
 using namespace dj;
 
 // Define these only in *one* .cc file.
@@ -27,7 +26,7 @@ bool TGLTFLoader::load(const char* filename)
 	std::string warn;
 	bool ret = tgltf->LoadASCIIFromFile(model, &err, &warn, filename);
 
-	std::cout << "Bledy: " << err << "\nWarningi: " << warn << std::endl;
+	//std::cout << "Bledy: " << err << "\nWarningi: " << warn << std::endl;
 
 	return ret;
 }

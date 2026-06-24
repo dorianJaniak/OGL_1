@@ -1,6 +1,5 @@
 #include "Object.h"
 #include <gtc/matrix_transform.hpp>
-#include <iostream>
 using namespace dj;
 
 Object::Object(const MeshAlignment& meshAlignment, const BoundingBox& boundingBox, std::string name)
@@ -13,7 +12,6 @@ Object::Object(const MeshAlignment& meshAlignment, const BoundingBox& boundingBo
 
 Object::~Object()
 {
-	std::cout << "Object destructed: " << name << std::endl;
 }
 
 void Object::setDefaultMaterial(const MaterialWeakPtr mat)
@@ -57,7 +55,6 @@ ObjectInstance::ObjectInstance(ObjectPtrConst object, bool visible)
 
 ObjectInstance::~ObjectInstance()
 {
-	std::cout << "Instance destructed: " << object->getName() << std::endl;
 }
 
 void ObjectInstance::setVisible(bool visible)

@@ -1,23 +1,26 @@
 #include "Framebuffer.h"
 #include "TextureManager.h"
 #include "Enums/Converters.h"
-#include <iostream>
+#include "Logging/ILogger.h"
+#include "Logging/Log.h"
 using namespace dj;
 
 GLuint Framebuffer::globalActiveID = 0u;
 
-Framebuffer::Framebuffer(const FramebufferDesc& desc) noexcept
+Framebuffer::Framebuffer(const FramebufferDesc& desc, std::shared_ptr<ILogger> logger) noexcept
 	: id(0u)
 	, desc(desc)
 	, attachments{}
+	, logger(logger)
 {
 	glGenFramebuffers(1, &id);
 }
 
-Framebuffer::Framebuffer(const ResolutionDesc& desc) noexcept
+Framebuffer::Framebuffer(const ResolutionDesc& desc, std::shared_ptr<ILogger> logger) noexcept
 	: id(0u)
 	, desc{}
 	, attachments{}
+	, logger(logger)
 {
 	this->desc.resolution = desc;
 	glGenFramebuffers(1, &id);
@@ -27,6 +30,7 @@ Framebuffer::Framebuffer(Framebuffer&& f) noexcept
 	: id(f.id)
 	, desc{f.desc}
 	, attachments{f.attachments}
+	, logger(f.logger)
 {
 	f.id = 0u;
 	f.desc = FramebufferDesc{};
@@ -37,6 +41,7 @@ Framebuffer& Framebuffer::operator=(Framebuffer&& f) noexcept
 	id = f.id;
 	desc = f.desc;
 	attachments = f.attachments;
+	logger = f.logger;
 
 	f.id = 0u;
 	f.desc = FramebufferDesc{};
@@ -224,9 +229,9 @@ bool Framebuffer::verifyResolutionConsistency(const TextureManager& texMgr, cons
 	bool resolutionConsistency = (res->width == desc.resolution.width
 		&& res->height != desc.resolution.height);
 
-	if (!resolutionConsistency)
+	if (!resolutionConsistency && logger)
 	{
-		std::cerr << Log::warnPrefix() << "Resolution of attachment: " << attachment << " has different resolution than Framebuffer\n";
+		logger->log(Log(LogLevel::Warning, 0u, "Framebuffer", "Resolution of attachment: {} has different resolution than Framebuffer", attachment));
 	}
 
 	return resolutionConsistency;

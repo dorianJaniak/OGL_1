@@ -142,6 +142,9 @@
     <ClCompile Include="InputCallback.cpp" />
     <ClCompile Include="InputSwitchboard.cpp" />
     <ClCompile Include="Light.cpp" />
+    <ClCompile Include="Logging\ILogger.cpp" />
+    <ClCompile Include="Logging\Logger.cpp" />
+    <ClCompile Include="Logging\Log.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -167,6 +170,7 @@
     <ClCompile Include="TGLTFLoader.cpp" />
     <ClCompile Include="Time\TimeDrivenMovement.cpp" />
     <ClCompile Include="Utils\GLWrapper.cpp" />
+    <ClCompile Include="Utils\Name.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Basic3DEnviro\Basic3DEnviro.h" />
@@ -187,6 +191,7 @@
     <ClInclude Include="Enums\Converters.h" />
     <ClInclude Include="Enums\FramebufferEnums.h" />
     <ClInclude Include="Enums\GLTypes.h" />
+    <ClInclude Include="Enums\LogCodes.h" />
     <ClInclude Include="Enums\Serialization.h" />
     <ClInclude Include="Enums\TextureColorEnums.h" />
     <ClInclude Include="Enums\TextureParameterEnums.h" />
@@ -198,6 +203,11 @@
     <ClInclude Include="InputCallback.h" />
     <ClInclude Include="InputSwitchboard.h" />
     <ClInclude Include="LightFramebufferBinding.h" />
+    <ClInclude Include="Logging\ILogger.h" />
+    <ClInclude Include="Logging\Log.h" />
+    <ClInclude Include="Logging\Logger.h" />
+    <ClInclude Include="Logging\LoggingInstance.h" />
+    <ClInclude Include="Logging\NamedLoggingInstance.h" />
     <ClInclude Include="Perspective.h" />
     <ClInclude Include="QualitySettings.h" />
     <ClInclude Include="Light.h" />
@@ -230,6 +240,7 @@
     <ClInclude Include="Time\TimeFlow.h" />
     <ClInclude Include="UniformNames.h" />
     <ClInclude Include="Utils\GLWrapper.h" />
+    <ClInclude Include="Utils\Name.h" />
     <ClInclude Include="Utils\NonCopyableNonMovable.h" />
   </ItemGroup>
   <ItemGroup>

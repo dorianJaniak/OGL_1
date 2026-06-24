@@ -1,7 +1,13 @@
 #include "TextureManager.h"
 #include "TextureData.h"
+#include "Enums/LogCodes.h"
 #include "Enums/Converters.h"
 using namespace dj;
+
+TextureManager::TextureManager(std::shared_ptr<ILogger> logger) noexcept
+	: NamedLoggingInstance(logger, "TextureManager")
+{
+}
 
 std::optional<TextureHandle> TextureManager::createEmptyTexture(const TextureDesc& desc)
 {
@@ -24,20 +30,20 @@ std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSampl
 
 	if (!data.isOk())
 	{
-		// std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;;
+		log(LogLevel::Error, LogCode::TexMgr_TextureLoading_Fail, "Could not load texture: {}", path);
 		return std::nullopt;
 	}
 
 	if (data.getWidth() == 0u || data.getHeight() == 0u)
 	{
-		// std::cerr << dj::Log::failPrefix() << "Wrong resolution of loaded texture: " << path << std::endl;
+		log(LogLevel::Error, LogCode::TexMgr_TextureResolution_Fail, "Wrong resolution of loaded texture: {}", path);
 		return std::nullopt;
 	}
 
 	std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
 	if (!sourceColorFormat)
 	{
-		// std::cerr << dj::Log::failPrefix() << "Unknown texture color format: " << path << std::endl;
+		log(LogLevel::Error, LogCode::TexMgr_TextureColorFormat_Fail, "Unknown texture color format: {}", path);
 		return std::nullopt;
 	}
 
@@ -80,26 +86,26 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 
 	if (!data.isOk())
 	{
-		// std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;;
+		log(LogLevel::Error, LogCode::TexMgr_TextureLoading_Fail, "Could not load cube texture: {}", pathPrefix);
 		return std::nullopt;
 	}
 
 	if (data.getWidth() == 0u || data.getHeight() == 0u)
 	{
-		// std::cerr << dj::Log::failPrefix() << "Wrong resolution of loaded texture: " << path << std::endl;
+		log(LogLevel::Error, LogCode::TexMgr_TextureResolution_Fail, "Wrong resolution of loaded cube texture: {}", pathPrefix);
 		return std::nullopt;
 	}
 
 	if (data.getWidth() != data.getHeight())
 	{
-		// std::cerr << dj::Log::failPrefix() << "Resolution of cube map side is incorrect. Width should equal height. Textures: " << pathPrefix << std::endl;
+		log(LogLevel::Error, LogCode::TexMgr_CubemapNotSquare, "Resolution of cube map side is incorrect. Width should equal height. Cube texture: {}", pathPrefix);
 		return std::nullopt;
 	}
 
 	std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
 	if (!sourceColorFormat)
 	{
-		// std::cerr << dj::Log::failPrefix() << "Unknown texture color format: " << path << std::endl;
+		log(LogLevel::Error, LogCode::TexMgr_TextureColorFormat_Fail, "Unknown cube texture color format: {}", pathPrefix);
 		return std::nullopt;
 	}
 
@@ -129,20 +135,20 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 
 		if (!data.isOk())
 		{
-			// std::cerr << dj::Log::failPrefix() << "Could not load texture: " << path << std::endl;;
+			log(LogLevel::Error, LogCode::TexMgr_TextureLoading_Fail, "Could not load cube texture: {}", genSidePath(i));
 			return std::nullopt;
 		}
 
 		if (data.getWidth() != desc.resolution.width || data.getHeight() != desc.resolution.height)
 		{
-			// std::cerr << dj::Log::failPrefix() << "Side: " << i << " has different resolution than side 0. Could not load texture: " << pathPrefix << std::endl;;
+			log(LogLevel::Error, LogCode::TexMgr_ResolutionMismatch, "Side {} has different resolution than side 0. Could not load cube texture: ", i, pathPrefix);
 			return std::nullopt;
 		}
 
 		std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
 		if (!sourceColorFormat)
 		{
-			// std::cerr << dj::Log::failPrefix() << "Unknown texture color format: " << pathPrefix << std::endl;
+			log(LogLevel::Error, LogCode::TexMgr_TextureColorFormat_Fail, "Unknown cube texture color format: {}", genSidePath(i));
 			return std::nullopt;
 		}
 
@@ -153,7 +159,7 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 
 		if (*sourceColorFormat != desc.format)
 		{
-			// std::cerr << dj::Log::failPrefix() << "Side: " << i << " has different color format than side 0. Could not load texture: " << pathPrefix << std::endl;
+			log(LogLevel::Error, LogCode::TexMgr_ColorFormatMismatch, "Side {} has different color format than side 0. Could not load cube texture: {}", i, pathPrefix);
 			return std::nullopt;
 		}
 
@@ -416,9 +422,9 @@ std::optional<TextureHandle> TextureManager::addTexture(TextureResource&& res, c
 			generations.push_back(1u);
 			referencesCount.push_back(0u);
 		}
-		catch (const std::exception&)
+		catch (const std::exception& e)
 		{
-			// std::cerr << dj::Log::failPrefix() << "Could not add new texture to vectors - exception: " << e.what() << std::endl;
+			log(LogLevel::Critical, LogCode::TexMgr_TextureNotAdded_Fail, "Could not add new texture to vectors - exception: {}", e.what());
 			return std::nullopt;
 		}
 	}

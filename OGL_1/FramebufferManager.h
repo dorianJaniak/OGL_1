@@ -1,5 +1,6 @@
 #pragma once
 #include "Utils/NonCopyableNonMovable.h"
+#include "Logging/NamedLoggingInstance.h"
 #include "ReferencesManager.h"
 #include "Descriptors/FramebufferDesc.h"
 #include "FramebufferHandle.h"
@@ -19,12 +20,12 @@ struct FramebufferHandleSet
 	std::vector<TextureHandle> texHandles;
 };
 
-class FramebufferManager : public HandleCreator<FramebufferManager>, public ReferencesManager<FramebufferManager>, private NonCopyable, private NonMovable
+class FramebufferManager : public HandleCreator<FramebufferManager>, public ReferencesManager<FramebufferManager>, public NamedLoggingInstance, private NonCopyable, private NonMovable
 {
 	std::vector<Framebuffer> framebuffers;
 	std::set<unsigned int> freeSlots;
 public:
-	FramebufferManager() noexcept = default;
+	FramebufferManager(std::shared_ptr<ILogger> logger) noexcept;
 	~FramebufferManager() = default;
 
 	std::optional<FramebufferHandle> createOnlyFramebuffer(const ResolutionDesc& desc);

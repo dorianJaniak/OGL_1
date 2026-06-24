@@ -1,5 +1,7 @@
 #pragma once
 #include "Utils/NonCopyableNonMovable.h"
+#include "Logging/LoggingInstance.h"
+#include "Logging/NamedLoggingInstance.h"
 #include "InputSwitchboard.h"
 
 struct GLFWwindow; 
@@ -7,7 +9,7 @@ struct GLFWwindow;
 namespace dj
 {
 
-class MainWindow : public InputSwitchboard, private NonCopyable, private NonMovable
+class MainWindow : public NamedLoggingInstance, public InputSwitchboard, private NonCopyable, private NonMovable
 {
 	GLFWwindow* window;
 	unsigned int width;
@@ -15,7 +17,7 @@ class MainWindow : public InputSwitchboard, private NonCopyable, private NonMova
 	float aspectRatio;
 
 public:
-	MainWindow(unsigned int width, unsigned int height, float aspectRatio);
+	MainWindow(std::shared_ptr<ILogger> logger, unsigned int width, unsigned int height, float aspectRatio);
 
 	bool initGLFW(int majorGLVer, int minorGLVer, const char* name);
 	void terminate();

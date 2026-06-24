@@ -3,8 +3,13 @@
 #include "TextureManager.h"
 #include "Enums/Verification.h"
 #include "Enums/Serialization.h"
-#include <iostream>
+#include "Enums/LogCodes.h"
 using namespace dj;
+
+FramebufferManager::FramebufferManager(std::shared_ptr<ILogger> logger) noexcept
+	: NamedLoggingInstance(logger, "FramebufferManager")
+{
+}
 
 std::optional<FramebufferHandle> FramebufferManager::createOnlyFramebuffer(const ResolutionDesc& desc)
 {
@@ -40,13 +45,13 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 				if (!tex)
 				{
-					std::cerr << "Could not create empty Texture\n";
+					log(LogLevel::Error, LogCode::FboMgr_TextureCreation_Fail, "Could not create empty Texture");
 					return std::nullopt;
 				}
 
 				if (!fbo.assignTextureAttachment(texMgr, *tex, attachmentDesc->attachment))
 				{
-					std::cerr << "Could not assign Texture Attachment\n";
+					log(LogLevel::Error, LogCode::FboMgr_TextureAttachment_Fail, "Could not assign Texture Attachment");
 					return std::nullopt;
 				}
 
@@ -58,7 +63,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 				if (!fbo.assignRenderbufferAttachment(attachmentDesc->attachment, rbAttachDesc.internalFormat))
 				{
-					std::cerr << "Could not create Render Buffer Attachment\n";
+					log(LogLevel::Error, LogCode::FboMgr_RenderBufferAttachment_Fail, "Could not create Render Buffer Attachment");
 					return std::nullopt;
 				}
 			}
@@ -67,7 +72,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 	if (GLenum status = fbo.getFramebufferStatus(); !toBool<FramebufferStatusContext>(status))
 	{
-		std::cerr << "Framebuffer status incorrect: " << toString(status) << std::endl;
+		log(LogLevel::Error, LogCode::FboMgr_FramebufferStatus_Fail, "Framebuffer status incorrect: {}", toString(status));
 		return std::nullopt;
 	}
 
@@ -76,7 +81,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 	std::optional<FramebufferHandle> handle = addFramebuffer(std::move(fbo), desc);
 	if (!handle)
 	{
-		std::cerr << "Could not add created Framebuffer\n";
+		log(LogLevel::Critical, LogCode::FboMgr_FramebufferNotAdded_Fail, "Could not add created Framebuffer");
 		return std::nullopt;
 	}
 
@@ -193,14 +198,15 @@ void FramebufferManager::printFramebuffers() const
 {
 	for (const Framebuffer& fbo : framebuffers)
 	{
-		std::cout << "FBO Res: " << fbo.desc.resolution.width << ", " << fbo.desc.resolution.height << std::endl;
+		log(LogLevel::Debug, 0u, "FBO Res: {}, {}", fbo.desc.resolution.width, fbo.desc.resolution.height);
 
 		for (unsigned int i = 0; i < std::size(framebufferAttachmentsMapping); ++i)
 		{
 			if (fbo.attachments[i].has_value())
 			{
-				std::cout << "  Has attachment: " << static_cast<unsigned int>(fbo.attachments[i]->attachment)
-				<< ", type: " << static_cast<unsigned int>(fbo.attachments[i]->type) << std::endl;
+				log(LogLevel::Debug, 0u, "  Has attachment: {}, type: {}",
+					static_cast<unsigned int>(fbo.attachments[i]->attachment),
+					static_cast<unsigned int>(fbo.attachments[i]->type));
 			}
 		}
 	}

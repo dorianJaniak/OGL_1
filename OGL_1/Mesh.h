@@ -1,5 +1,7 @@
 #pragma once
 #include "Definitions.h"
+#include "Logging/ILogger.h"
+#include <memory>
 #include <vector>
 
 namespace dj {
@@ -18,7 +20,7 @@ public:
 	void addVertices(const float vertices[], unsigned int vertsCount);
 	void addIndices(const unsigned int indices[], unsigned int indicesCount);
 
-	bool computeTangents();
+	bool computeTangents(std::shared_ptr<ILogger> logger);
 	void computeBoundingBox();
 
 	unsigned int getVerticesCount() const;

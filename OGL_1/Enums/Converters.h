@@ -4,6 +4,7 @@
 #include "FramebufferEnums.h"
 #include "GLTypes.h"
 #include <optional>
+#include <type_traits>
 
 namespace dj
 {
@@ -41,8 +42,9 @@ std::optional<T> toEnum(GLenum value)
 
 // Section: toInt functions
 template <class T>
-unsigned int toUnsigned(T value)
+constexpr unsigned int toUnsigned(T value)
 {
+	static_assert(std::is_enum_v<T>, "Supports only enum types");
 	return static_cast<unsigned int>(value);
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 #include "DefinitionsGL.h"
+#include "Logging/ILogger.h"
+#include <memory>
 
 namespace dj 
 {
@@ -19,7 +21,7 @@ public:
 	~Shader();
 
 	void source(const char* source);
-	bool compile(Log& log);
+	bool compile(std::shared_ptr<ILogger> logger);
 	void deleteShader();
 
 	ShaderID getIndex() const;
