@@ -1,13 +1,14 @@
 #pragma once
 
+#include "Utils/NonCopyableNonMovable.h"
 #include "DefinitionsGL.h"
+#include "Logging/NamedLoggingInstance.h"
 #include <string>
 #include <unordered_map>
 
 namespace dj
 {
 	class Shader;
-	struct Log;
 }
 
 namespace dj
@@ -31,20 +32,18 @@ namespace dj
 	\todo
 	- move somewhere temporary functions - \ref assignTextureUnit and \ref getTextureUnit
 */
-class Program {
+class Program : public NamedLoggingInstance, private NonCopyable {
 	bool indexOk;
 	ProgramID index;
 
 	std::unordered_map<std::string, GLint> uniformLocations;
 	std::unordered_map<std::string_view, unsigned int> uniformLimits;
-	std::string name;
 	
 	// temp
 	std::string textureUniforms[c_textureUnitsMax];
 
 public:
-	Program() noexcept;
-	Program(const Program& prog) = delete;
+	Program(std::shared_ptr<ILogger> logger) noexcept;
 	Program(Program&& prog) noexcept;
 
 	/*! \brief Prepares, compiles Shaders and links the Program
@@ -55,7 +54,7 @@ public:
 		\param[in] gSource *[optional]* pointer to the raw source code of geometry Shader
 		\return true if successfully created Shaders and linked them into single Program, otherwise false
 	*/
-	bool prepare(const char* const vSource, const char* const fSource, Log &log, const std::string &programName, const char *const gSource = nullptr);
+	bool prepare(const char* const vSource, const char* const fSource, const std::string &programName, const char *const gSource = nullptr);
 	void use() const;
 
 	bool registerUniform(const char* uniformName);
@@ -71,9 +70,8 @@ public:
 	// temp
 
 	ProgramID getIndex() const;
-	const std::string& getName() const;
 private:
-	bool link(Log& log);
+	bool link();
 };
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "ILogger.h"
 #include <bitset>
+#include <iosfwd>
 
 namespace dj
 {
@@ -13,7 +14,7 @@ public:
 	Logger();
 
 	void enableLogging(LogLevel level, bool active);
-	virtual void log(const ILogger::ILog& event);
+	virtual void log(const ILog& event);
 
 private:
 	static const char* getPrefix(LogLevel level);

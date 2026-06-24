@@ -1,5 +1,8 @@
 #include "Shader.h"
 #include "Definitions.h"
+#include "Logging/Log.h"
+#include "Enums/LogCodes.h"
+#include "Utils/GLWrapper.h"
 using namespace dj;
 
 Shader::Shader(GLenum shaderType)
@@ -18,17 +21,18 @@ void Shader::source(const char* source)
 	glShaderSource(index, 1, &source, nullptr);
 }
 
-bool Shader::compile(Log& log)
+bool Shader::compile(std::shared_ptr<ILogger> logger)
 {
+	GLint ok;
 	glCompileShader(index);
-	glGetShaderiv(index, GL_COMPILE_STATUS, &log.ok);
+	glGetShaderiv(index, GL_COMPILE_STATUS, &ok);
 
-	if (!log.ok)
+	if (!ok && logger)
 	{
-		glGetShaderInfoLog(index, 1024, nullptr, log.log);
+		logger->log(Log(LogLevel::Error, "Shader", glGetShaderInfoLogString(index), LogCode::Shader_Compilation_Fail));
 	}
 
-	return log.ok;
+	return static_cast<bool>(ok);
 }
 
 void Shader::deleteShader()

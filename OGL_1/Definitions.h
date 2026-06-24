@@ -56,12 +56,6 @@ namespace dj {
 		Index verticesEnd;
 	};
 
-	//struct BoundingBox
-	//{
-	//	glm::vec3 pos;
-	//	glm::vec3 neg;
-	//};
-
 	struct BoundingBox
 	{
 		glm::vec3 front[4];
@@ -87,60 +81,5 @@ namespace dj {
 	{
 		glm::vec2 pos;
 		glm::vec2 neg;
-	};
-
-	struct Log {
-		static constexpr unsigned cMaxLength = 1024;
-		char log[cMaxLength];
-		std::string name;
-		int ok;
-
-		Log()
-		{
-			log[0] = '\0';
-		}
-
-		void setName(const std::string& name)
-		{
-			this->name = name;
-		}
-
-		static const char* failPrefix()
-		{
-			return ">>FAIL: ";
-		}
-
-		static const char* warnPrefix()
-		{
-			return ">Warn: ";
-		}
-
-		static const char* okPrefix()
-		{
-			return "OK: ";
-		}
-
-		static const char* infoPrefix()
-		{
-			return "INFO: ";
-		}
-
-		void print() const
-		{
-			print(name.c_str());
-		}
-
-		void print(const char* procedureDescription) const
-		{
-			if (ok)
-			{
-				std::cout << okPrefix() << procedureDescription << std::endl;
-			}
-			else
-			{
-				std::cerr << failPrefix() << procedureDescription << std::endl;
-				std::cerr << log << std::endl << std::endl;
-			}
-		}
 	};
 }

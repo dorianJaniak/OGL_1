@@ -1,32 +1,35 @@
 #include "Program.h"
 #include "Shader.h"
 #include "Definitions.h"
+#include "Utils/GLWrapper.h"
+#include "Enums/LogCodes.h"
 using namespace dj;
 
-Program::Program() noexcept
-	: indexOk(false)
+Program::Program(std::shared_ptr<ILogger> logger) noexcept
+	: NamedLoggingInstance(logger, "")
+	, indexOk(false)
 	, index(0u)
 {
 }
 
 Program::Program(Program&& prog) noexcept
-	: indexOk(prog.indexOk)
+	: NamedLoggingInstance(std::move(prog))
+	, indexOk(prog.indexOk)
 	, index(prog.index)
 {
 	prog.indexOk = false;
 	prog.index = 0u;
 }
 
-bool Program::prepare(const char* const vSource, const char* const fSource, Log &log, const std::string &progName, const char* const gSource)
+bool Program::prepare(const char* const vSource, const char* const fSource, const std::string &progName, const char* const gSource)
 {
 	if (indexOk)
 	{
-		log.ok = false;
-		log.print("Executed prepare on already prepared program");
+		log(LogLevel::Error, LogCode::Program_Initialized_Fail, "Tried to reinitialize program");
 		return false;
 	}
 
-	name = progName;
+	setName(progName);
 
 	// Create and compile shaders separately
 	dj::Shader vShader(GL_VERTEX_SHADER);
@@ -42,29 +45,23 @@ bool Program::prepare(const char* const vSource, const char* const fSource, Log 
 	}
 
 	// Compile Vertex Shader
-	vShader.compile(log);
-	std::string msg = std::string("Vertex Shader Compilation (") + progName + std::string(")");
-	log.print(msg.c_str());
-	if (!log.ok)
+	log(LogLevel::Debug, 0u, "Vertex Shader compilation");
+	if (!vShader.compile(logger))
 	{
 		return false;
 	}
 
 	// Compile Fragment Shader
-	fShader.compile(log);
-	msg = std::string("Fragment Shader Compilation (") + progName + std::string(")");
-	log.print(msg.c_str());
-	if (!log.ok)
+	log(LogLevel::Debug, 0u, "Fragment Shader compilation");
+	if (!fShader.compile(logger))
 	{
 		return false;
 	}
 
 	if (gSource)
 	{
-		gShader.compile(log);
-		msg = std::string("Geometry Shader Compilation (") + progName + std::string(")");
-		log.print(msg.c_str());
-		if (!log.ok)
+		log(LogLevel::Debug, 0u, "Geometry Shader compilation");
+		if (!gShader.compile(logger))
 		{
 			return false;
 		}
@@ -82,10 +79,8 @@ bool Program::prepare(const char* const vSource, const char* const fSource, Log 
 	}
 
 	// Link program
-	link(log);
-	msg = std::string("Program Linking (") + progName + std::string(")");
-	log.print(msg.c_str());
-	if (!log.ok)
+	log(LogLevel::Debug, 0u, "Program linking");
+	if (!link())
 	{
 		// Delete Program because unsuccessful
 		glDeleteProgram(index);
@@ -102,16 +97,17 @@ bool Program::prepare(const char* const vSource, const char* const fSource, Log 
 	return true;
 }
 
-bool Program::link(Log& log)
+bool Program::link()
 {
+	GLint ok;
 	glLinkProgram(index);
-	glGetProgramiv(index, GL_LINK_STATUS, &log.ok);
-	if (!log.ok)
+	glGetProgramiv(index, GL_LINK_STATUS, &ok);
+	if (!ok)
 	{
-		glGetProgramInfoLog(index, 1024, nullptr, log.log);
+		log(LogLevel::Error, LogCode::Program_Link_Fail, glGetProgramInfoLogString(index));
 	}
 
-	return log.ok;
+	return static_cast<bool>(ok);
 }
 
 void Program::use() const
@@ -166,12 +162,6 @@ ProgramID Program::getIndex() const
 {
 	return index;
 }
-
-const std::string& Program::getName() const
-{
-	return name;
-}
-
 
 // temp
 void Program::assignTextureUnit(const char* uniformName, GLuint textureUnit)

@@ -43,6 +43,18 @@
     <Filter Include="Pliki źródłowe\Time">
       <UniqueIdentifier>{c319dd67-291f-46d1-833a-81198bfd6b9c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Pliki nagłówkowe\Predefinitions">
+      <UniqueIdentifier>{4b4621aa-7a8e-4269-89d5-357687d934b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\Predefinitions">
+      <UniqueIdentifier>{8e0cbf10-8af8-4a26-83ac-b63af7717a07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki nagłówkowe\Logging">
+      <UniqueIdentifier>{a94ee357-7dc2-44a1-9c58-4d18af4adda9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\Logging">
+      <UniqueIdentifier>{4ab5dcd4-0311-41b3-88ef-63362589475b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OGL_1.cpp">
@@ -138,6 +150,18 @@
     <ClCompile Include="FramebufferManager.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="Logging\ILogger.cpp">
+      <Filter>Pliki źródłowe\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="Logging\Logger.cpp">
+      <Filter>Pliki źródłowe\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Name.cpp">
+      <Filter>Pliki źródłowe\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Logging\Log.cpp">
+      <Filter>Pliki źródłowe\Logging</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextureData.h">
@@ -174,12 +198,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="ObjectTransformation.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="Predefinitions\PredefinedShaders.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="Predefinitions\PredefinedMeshes.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="TGLTFLoader.h">
@@ -325,6 +343,33 @@
     </ClInclude>
     <ClInclude Include="Enums\Verification.h">
       <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Predefinitions\PredefinedMeshes.h">
+      <Filter>Pliki nagłówkowe\Predefinitions</Filter>
+    </ClInclude>
+    <ClInclude Include="Predefinitions\PredefinedShaders.h">
+      <Filter>Pliki nagłówkowe\Predefinitions</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging\ILogger.h">
+      <Filter>Pliki nagłówkowe\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging\Logger.h">
+      <Filter>Pliki nagłówkowe\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging\Log.h">
+      <Filter>Pliki nagłówkowe\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Name.h">
+      <Filter>Pliki nagłówkowe\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging\LoggingInstance.h">
+      <Filter>Pliki nagłówkowe\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Enums\LogCodes.h">
+      <Filter>Pliki nagłówkowe\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging\NamedLoggingInstance.h">
+      <Filter>Pliki nagłówkowe\Logging</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

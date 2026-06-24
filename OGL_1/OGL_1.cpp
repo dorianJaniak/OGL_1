@@ -6,6 +6,8 @@
 #include <gtc/type_ptr.hpp>
 
 #include "MainWindow.h"
+#include "Logging/Logger.h"
+#include "Logging/Log.h"
 #include "QualitySettings.h"
 
 #include "RenderNodes/RenderShadedWorldNode.h"
@@ -45,12 +47,12 @@
 #include <array>
 
 // Helpers - Loaders
-bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
-bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms);
+bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms, std::shared_ptr<dj::ILogger> logger);
+bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms, std::shared_ptr<dj::ILogger> logger);
 
-bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures);
-bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension);
-bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension);
+bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures, std::shared_ptr<dj::ILogger> logger);
+bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension, std::shared_ptr<dj::ILogger> logger);
+bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension, std::shared_ptr<dj::ILogger> logger);
 
 void configureRasterization();
 void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects);
@@ -66,12 +68,14 @@ bool createShadows(
 	const std::vector<dj::LightPtr>& lights,
 	std::vector<dj::LightFramebufferBinding>& spotFBOs,
 	std::vector<dj::LightFramebufferBinding>& pointFBOs,
-	const dj::QualitySettings<4u>& quality);
+	const dj::QualitySettings<4u>& quality,
+	std::shared_ptr<dj::ILogger> logger);
 bool createMaterials(
 	std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
 	const std::vector<dj::TextureHandle>& texturesPBR,
-	const std::vector<dj::TextureHandle>& texturesCube);
+	const std::vector<dj::TextureHandle>& texturesCube,
+	std::shared_ptr<dj::ILogger> logger);
 std::optional<dj::FramebufferHandleSet> createMainFramebuffer(
 	dj::FramebufferManager& fboMgr,
 	dj::TextureManager& texMgr,
@@ -179,6 +183,8 @@ void basicSetupQualitySettings(dj::QualitySettings<4u>& quality)
 
 int main()
 {
+	std::shared_ptr<dj::Logger> logger = std::make_shared<dj::Logger>();
+
 	dj::QualitySettings<4u> quality;
 	basicSetupQualitySettings(quality);
 
@@ -203,7 +209,7 @@ int main()
 	//return tgltfLoader.load("res/gltfs/twoCubes_altC_rot_texture_customProp/untitled.gltf");
 
 	// STAGE 1 :::: Window and Context Init
-	dj::MainWindow mw(1200, 800, (1200.0f / 800.0f));
+	dj::MainWindow mw(logger, 1200, 800, (1200.0f / 800.0f));
 	if (!mw.initGLFW(3, 3, "Prosty silnik"))
 	{
 		return -1;
@@ -212,14 +218,14 @@ int main()
 
 	// STAGE 2 :::: Shader Programs Creation
 	// Loads, compiles and links shaders and generates Program ID
-	if (!loadEnginePrograms(enginePrograms))
+	if (!loadEnginePrograms(enginePrograms, logger))
 	{
 		mw.terminate();
 		return -1;
 	}
 
 	// Setups Texture Units
-	if (!setupEnginePrograms(enginePrograms))
+	if (!setupEnginePrograms(enginePrograms, logger))
 	{
 		mw.terminate();
 		return -1;
@@ -239,7 +245,10 @@ int main()
 	std::optional<dj::FramebufferHandleSet> mainFBOHandles = createMainFramebuffer(fboMgr, texMgr, mw, quality);
 	if (!mainFBOHandles)
 	{
-		std::cerr << dj::Log::failPrefix() << "Could not create main FBO and its Textures\n";
+		if (logger)
+		{
+			logger->log(dj::Log(dj::LogLevel::Critical, "", "Could not create main FBO and its Textures"));
+		}
 		mw.terminate();
 		return -1;
 	}
@@ -261,7 +270,7 @@ int main()
 	glEnableVertexAttribArray(1);
 
 	// STAGE 6 :::: FBO for shadow maps
-	if (!createShadows(texMgr, fboMgr, lights, spotFBOs, pointFBOs, quality))
+	if (!createShadows(texMgr, fboMgr, lights, spotFBOs, pointFBOs, quality, logger))
 	{
 		mw.terminate();
 		return -1;
@@ -301,14 +310,14 @@ int main()
 	std::vector<dj::TextureHandle> pbrTextures;
 	std::vector<dj::TextureHandle> skyboxTextures;
 
-	if (!loadTextures(texMgr, pbrTextures, skyboxTextures))
+	if (!loadTextures(texMgr, pbrTextures, skyboxTextures, logger))
 	{
 		mw.terminate();
 		return -1;
 	}
 
 	// Materials configuration
-	if (!createMaterials(materials, enginePrograms, pbrTextures, skyboxTextures))
+	if (!createMaterials(materials, enginePrograms, pbrTextures, skyboxTextures, logger))
 	{
 		mw.terminate();
 		return -1;
@@ -614,43 +623,43 @@ void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr> &instances, dj:
 	}
 }
 
-bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& programs)
+bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& programs, std::shared_ptr<dj::ILogger> logger)
 {
-	dj::Log log;
+	assert(logger && "Logger is nullptr");
 
-	dj::ProgramPtr program = std::make_shared<dj::Program>();
-	dj::ProgramPtr programFBO = std::make_shared<dj::Program>();
-	dj::ProgramPtr programDepthTest = std::make_shared<dj::Program>();
-	dj::ProgramPtr programSkybox = std::make_shared<dj::Program>();
-	dj::ProgramPtr programDebugMesh = std::make_shared<dj::Program>();
-	dj::ProgramPtr programDepthTestCube = std::make_shared<dj::Program>();
+	dj::ProgramPtr program = std::make_shared<dj::Program>(logger);
+	dj::ProgramPtr programFBO = std::make_shared<dj::Program>(logger);
+	dj::ProgramPtr programDepthTest = std::make_shared<dj::Program>(logger);
+	dj::ProgramPtr programSkybox = std::make_shared<dj::Program>(logger);
+	dj::ProgramPtr programDebugMesh = std::make_shared<dj::Program>(logger);
+	dj::ProgramPtr programDepthTestCube = std::make_shared<dj::Program>(logger);
 
-	if (!program->prepare(dj::prePBR_vsSource, dj::pbr_fsSource, log, std::string("PBR Shader")))
+	if (!program->prepare(dj::prePBR_vsSource, dj::pbr_fsSource, std::string("PBR Shader")))
 	{
 		return false;
 	}
 
-	if (!programFBO->prepare(dj::fullscreenFBO_vsSource, dj::fullscreenFBO_fsSource, log, std::string("FBO Shader")))
+	if (!programFBO->prepare(dj::fullscreenFBO_vsSource, dj::fullscreenFBO_fsSource, std::string("FBO Shader")))
 	{
 		return false;
 	}
 
-	if (!programDepthTest->prepare(dj::depthTestMat_vsSource, dj::depthTestMat_fsSource, log, std::string("Depth Test Shader")))
+	if (!programDepthTest->prepare(dj::depthTestMat_vsSource, dj::depthTestMat_fsSource, std::string("Depth Test Shader")))
 	{
 		return false;
 	}
 
-	if (!programSkybox->prepare(dj::skybox_vsSource, dj::skybox_fsSource, log, std::string("Skybox Shader")))
+	if (!programSkybox->prepare(dj::skybox_vsSource, dj::skybox_fsSource, std::string("Skybox Shader")))
 	{
 		return false;
 	}
 
-	if (!programDebugMesh->prepare(dj::debugMesh_vsSource, dj::debugMesh_fsSource, log, std::string("Debug Mesh Shader"), dj::debugMesh_gsSource))
+	if (!programDebugMesh->prepare(dj::debugMesh_vsSource, dj::debugMesh_fsSource, std::string("Debug Mesh Shader"), dj::debugMesh_gsSource))
 	{
 		return false;
 	}
 
-	if (!programDepthTestCube->prepare(dj::depthTestCube_vsSource, dj::depthTestCube_fsSource, log, std::string("Depth Test Cube"), dj::depthTestCube_gsSource))
+	if (!programDepthTestCube->prepare(dj::depthTestCube_vsSource, dj::depthTestCube_fsSource, std::string("Depth Test Cube"), dj::depthTestCube_gsSource))
 	{
 		return false;
 	}
@@ -664,12 +673,12 @@ bool loadEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& programs)
 	return true;
 }
 
-bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms)
+bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms, std::shared_ptr<dj::ILogger> logger)
 {
 	unsigned int uniformsCount = 0u;
 	unsigned int uniformsOkCount = 0u;
 
-	auto registerAndCheck = [&uniformsCount, &uniformsOkCount](dj::ProgramPtr& program, const std::string& uniformName)
+	auto registerAndCheck = [&uniformsCount, &uniformsOkCount, &logger](dj::ProgramPtr& program, const std::string& uniformName)
 		{
 			++uniformsCount;
 			if (program->registerUniform(uniformName))
@@ -678,7 +687,11 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 			}
 			else
 			{
-				std::cerr << dj::Log::warnPrefix() << "Could not locate uniform: " << uniformName << " in program: " << program->getName() << std::endl;
+				if (logger)
+				{
+					logger->log(dj::Log(dj::LogLevel::Error, 0u, __FUNCTION__,
+						"Could not locate uniform: {} in program: {}", uniformName, program->getName()));
+				}
 			}
 		};
 
@@ -773,20 +786,27 @@ bool setupEnginePrograms(std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePr
 
 		if (uniformsCount != uniformsOkCount)
 		{
-			std::cerr << dj::Log::warnPrefix() << "Could not locate all required uniforms in programs. Located " << uniformsOkCount << " out of " << uniformsCount << std::endl;
+			if (logger)
+			{
+				logger->log(dj::Log(dj::LogLevel::Warning, 0u, __FUNCTION__, "Could not locate all required uniforms in programs. Located {} out of {}", uniformsOkCount, uniformsCount));
+			}
 			return true;
 		}
 	}
 	catch (const std::out_of_range& ex)
 	{
-		std::cerr << dj::Log::failPrefix() << __FUNCTION__ << "() Out of Range: " << ex.what() << std::endl;
+		if (logger)
+		{
+			logger->log(dj::Log(dj::LogLevel::Critical, 0u, __FUNCTION__, "Out of range: {}", ex.what()));
+		}
+
 		return false;
 	}
 
 	return true;
 }
 
-bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures)
+bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, std::vector<dj::TextureHandle>& skyboxTextures, std::shared_ptr<dj::ILogger> logger)
 {
 	static const unsigned int& texsCount = dj_basicEnviro::pbrMaterialsCount;
 	static const auto& texPaths = dj_basicEnviro::pbrMaterialPaths;
@@ -798,7 +818,7 @@ bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pb
 
 	for (unsigned int i = 0u; i < texsCount; ++i)
 	{
-		if (!loadTexturesPBR(texMgr, pbrTextures, texPaths[i].data(), texExts[i].data()))
+		if (!loadTexturesPBR(texMgr, pbrTextures, texPaths[i].data(), texExts[i].data(), logger))
 		{
 			return false;
 		}
@@ -806,7 +826,7 @@ bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pb
 
 	for (unsigned int i = 0u; i < skyboxesCount; ++i)
 	{
-		if (!loadTextureCube(texMgr, skyboxTextures, skyboxPaths[i].data(), skyboxExts[i].data()))
+		if (!loadTextureCube(texMgr, skyboxTextures, skyboxPaths[i].data(), skyboxExts[i].data(), logger))
 		{
 			return false;
 		}
@@ -815,7 +835,7 @@ bool loadTextures(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pb
 	return true;
 }
 
-bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension)
+bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& pbrTextures, const char* path, const char* extension, std::shared_ptr<dj::ILogger> logger)
 {
 	static const std::string normalSuffix = "normal-ogl";
 	static const std::array<std::string, 4> suffixes = {
@@ -834,7 +854,7 @@ bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>&
 
 		if (!handle)
 		{
-			std::cerr << dj::Log::failPrefix() << "Could not load texture: " << fullPath << std::endl;
+			logger->log(dj::Log(dj::LogLevel::Error, 0u, "", "Could not load texture: {}", fullPath));
 			return false;
 		}
 
@@ -844,7 +864,7 @@ bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>&
 	return true;
 }
 
-bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension)
+bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension, std::shared_ptr<dj::ILogger> logger)
 {
 	static const dj::TextureSamplingDesc& sampling = dj::getTextureSamplingDescDefaultsForCube();
 	const std::array<dj::TextureManager::CubeSideMapping, 6u> suffixesMapping{ {
@@ -859,7 +879,10 @@ bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>&
 	std::optional<dj::TextureHandle> handle = texMgr.createCubeMapFromFile(sampling, path, suffixesMapping, false, false, true);
 	if (!handle)
 	{
-		std::cerr << dj::Log::failPrefix() << "Could not load cubemap: " << path << std::endl;
+		if (logger)
+		{
+			logger->log(dj::Log(dj::LogLevel::Error, 0u, __FUNCTION__, "Could not load cubemap: {}", path));
+		}
 		return false;
 	}
 
@@ -968,7 +991,8 @@ bool createShadows(dj::TextureManager& texMgr,
 					const std::vector<dj::LightPtr>& lights, 
 					std::vector<dj::LightFramebufferBinding>& spotFBOs,
 					std::vector<dj::LightFramebufferBinding>& pointFBOs,
-					const dj::QualitySettings<4u>& quality)
+					const dj::QualitySettings<4u>& quality,
+					std::shared_ptr<dj::ILogger> logger)
 {
 	const unsigned int shadow2DRes = quality.getActive<dj::EngineQuality::Shadow2DResolution>();
 	const unsigned int shadowCubeRes = quality.getActive<dj::EngineQuality::ShadowCubeResolution>();
@@ -1003,7 +1027,10 @@ bool createShadows(dj::TextureManager& texMgr,
 			std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
 			if (!handleSet || handleSet->texHandles.size() == 0u)
 			{
-				std::cerr << dj::Log::failPrefix() << "Could not create texture for Spotlight\n";
+				if (logger)
+				{
+					logger->log(dj::Log(dj::LogLevel::Error, __FUNCTION__, "Could not create texture for Spotlight"));
+				}
 				return false;
 			}
 
@@ -1039,7 +1066,10 @@ bool createShadows(dj::TextureManager& texMgr,
 			std::optional<dj::FramebufferHandleSet> handleSet = fboMgr.createFramebufferAndTextures(texMgr, desc);
 			if (!handleSet || handleSet->texHandles.size() == 0u)
 			{
-				std::cerr << dj::Log::failPrefix() << "Could not create texture for Pointlight\n";
+				if (logger)
+				{
+					logger->log(dj::Log(dj::LogLevel::Error, __FUNCTION__, "Could not create texture for Pointlight"));
+				}
 				return false;
 			}
 
@@ -1053,7 +1083,8 @@ bool createShadows(dj::TextureManager& texMgr,
 bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	const std::map<dj::EngineProgramID, dj::ProgramPtr>& enginePrograms,
 	const std::vector<dj::TextureHandle>& texturesPBR,
-	const std::vector<dj::TextureHandle>& texturesCube)
+	const std::vector<dj::TextureHandle>& texturesCube,
+	std::shared_ptr<dj::ILogger> logger)
 {
 
 	assert(texturesPBR.size() >= 8u && "Too few textures in texturesPBR");
@@ -1094,7 +1125,10 @@ bool createMaterials(std::vector<dj::MaterialPtr>& materials,
 	}
 	catch (const std::out_of_range& ex)
 	{
-		std::cerr << dj::Log::failPrefix() << __FUNCTION__ << "() Out of Range: " << ex.what() << std::endl;
+		if (logger)
+		{
+			logger->log(dj::Log(dj::LogLevel::Critical, 0u, __FUNCTION__, "Out of Range: {}", ex.what()));
+		}
 		return false;
 	}
 

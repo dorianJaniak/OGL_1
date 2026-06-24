@@ -6,11 +6,13 @@
 #include <GL/glew.h>
 #include <vector>
 #include <optional>
+#include <memory>
 
 namespace dj
 {
 class TextureManager;
 class FramebufferManager;
+class ILogger;
 } // namespace dj
 
 namespace dj
@@ -56,10 +58,11 @@ class Framebuffer : private NonCopyable
 	GLuint id;
 	std::array<std::optional<AttachmentBinding>, std::size(framebufferAttachmentsMapping)> attachments;
 	FramebufferDesc desc;
+	std::shared_ptr<ILogger> logger;
 
 public:
-	Framebuffer(const FramebufferDesc& desc) noexcept;
-	Framebuffer(const ResolutionDesc& desc) noexcept;
+	Framebuffer(const FramebufferDesc& desc, std::shared_ptr<ILogger> logger = nullptr) noexcept;
+	Framebuffer(const ResolutionDesc& desc, std::shared_ptr<ILogger> logger = nullptr) noexcept;
 	Framebuffer(Framebuffer&&) noexcept;
 	Framebuffer& operator=(Framebuffer&&) noexcept;
 	~Framebuffer();

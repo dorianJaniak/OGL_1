@@ -1,5 +1,6 @@
 #include "Logger.h"
 #include <cassert>
+#include <iostream>
 using namespace dj;
 
 Logger::Logger()
@@ -14,7 +15,7 @@ void Logger::enableLogging(LogLevel level, bool active)
 	enabledLevels[static_cast<std::size_t>(level)] = active;
 }
 
-void Logger::log(const ILogger::ILog& event)
+void Logger::log(const ILog& event)
 {
 	std::size_t logLevel = static_cast<std::size_t>(event.level);
 	assert(logLevel < enabledLevels.size() && "Logger could not handle Log Level - enabledLevels bitset too small");
