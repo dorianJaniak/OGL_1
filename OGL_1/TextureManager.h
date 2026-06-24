@@ -1,6 +1,7 @@
 #pragma once
 #include "ReferencesManager.h"
 #include "Utils/NonCopyableNonMovable.h"
+#include "Logging/NamedLoggingInstance.h"
 #include "TextureHandle.h"
 #include "TextureResource.h"
 #include "Enums/TextureParameterEnums.h"
@@ -23,7 +24,7 @@ namespace dj
 * \todo consider if it is worth to track how many TextureManager objects are created 
 *	(NOTE: Current implementation is not safe for more than 1 instance)
 */
-class TextureManager : public HandleCreator<TextureManager>, public ReferencesManager<TextureManager>, private NonCopyable, private NonMovable
+class TextureManager : public HandleCreator<TextureManager>, public ReferencesManager<TextureManager>, public NamedLoggingInstance, private NonCopyable, private NonMovable
 {
 	//! \todo consider if TextureManager would benefit from having State (OnlyRead / Modifying)?
 	//enum class State
@@ -43,7 +44,7 @@ public:
 		std::string suffix;
 	};
 
-	TextureManager() noexcept = default;
+	TextureManager(std::shared_ptr<ILogger> logger) noexcept;
 	~TextureManager() noexcept = default;
 
 	std::optional<TextureHandle> createEmptyTexture(const TextureDesc& desc);

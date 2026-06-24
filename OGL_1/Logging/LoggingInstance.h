@@ -13,7 +13,8 @@ class LoggingInstance
 	const Name& instanceName;
 
 protected:
-	std::shared_ptr<ILogger> logger;
+	// Mutable to allow logging in const methods of derived classes
+	mutable std::shared_ptr<ILogger> logger;
 
 public:
 	explicit LoggingInstance(const Name& instanceName, std::shared_ptr<ILogger> logger) noexcept
@@ -23,7 +24,7 @@ public:
 	}
 
 	template <typename CodeType, typename... Args>
-	void log(LogLevel level, CodeType code, std::string_view fmt, Args... args)
+	void log(LogLevel level, CodeType code, std::string_view fmt, Args... args) const
 	{
 		if (logger)
 		{
@@ -32,16 +33,16 @@ public:
 	}
 
 	template <typename CodeType>
-	void log(LogLevel level, CodeType code, std::string_view description)
+	void log(LogLevel level, CodeType code, std::string_view description) const
 	{
 		if (logger)
 		{
-			logger->log(Log(level, instanceName.getName(), description, code));
+			logger->log(Log(level, code, instanceName.getName(), description));
 		}
 	}
 
 	template <typename CodeType>
-	void logOnce(LogLevel level, CodeType code, std::string_view description)
+	void logOnce(LogLevel level, CodeType code, std::string_view description) const
 	{
 		static Log lastLog(level, instanceName.getName(), description, code);
 		if (lastLog.level != level || lastLog.code != code || lastLog.description != description)

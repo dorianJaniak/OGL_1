@@ -1,7 +1,7 @@
 #include "Mesh.h"
+#include "Logging/Log.h"
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
-#include <iostream>
 using namespace dj;
 
 Mesh::Mesh()
@@ -36,7 +36,7 @@ void Mesh::addIndices(const unsigned int indices[], unsigned int indicesCount)
 	}
 }
 
-bool Mesh::computeTangents()
+bool Mesh::computeTangents(std::shared_ptr<ILogger> logger)
 {
 	static unsigned meshCount = 0;
 	if ((indices.size() % 3) || indices.size() == 0)
@@ -72,11 +72,13 @@ bool Mesh::computeTangents()
 		glm::vec2 duv1 = uv2 - uv1;
 		glm::vec2 duv2 = uv3 - uv1;
 
-		if (glm::cross(glm::vec3(duv1.x, duv1.y, 0.0f), glm::vec3(duv2.x, duv2.y, 0.0f)).z < 0.0f)
+		if (logger && glm::cross(glm::vec3(duv1.x, duv1.y, 0.0f), glm::vec3(duv2.x, duv2.y, 0.0f)).z < 0.0f)
 		{
-			std::cout << "Wrong order of UV for Mesh " << meshCount << " point: (" << pos1.x << ", " << pos1.y << ", " << pos1.z << ") and ("
-				<< pos2.x << ", " << pos2.y << ", " << pos2.z << ") and ("
-				<< pos3.x << ", " << pos3.y << ", " << pos3.z << ")\n";
+			logger->log(Log(LogLevel::Warning, 0u, "", "Wrong order of UV for Mesh {} point: ({}, {}, {}) and ({}, {}, {}) and ({}, {}, {})",
+				meshCount,
+				pos1.x, pos1.y, pos1.z,
+				pos2.x, pos2.y, pos2.z,
+				pos3.x, pos3.y, pos3.z));
 		}
 
 

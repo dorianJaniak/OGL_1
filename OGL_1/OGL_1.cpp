@@ -37,9 +37,9 @@
 #include "Time/TimeDrivenMovement.h"
 #include "Time/PerFrameUpdates.h"
 #include "Time/OccurrenceFrequency.h"
+#include "Enums/LogCodes.h"
 #include "Enums/Converters.h"
 
-#include <iostream>
 #include <chrono>
 #include <vector>
 #include <map>
@@ -55,7 +55,7 @@ bool loadTexturesPBR(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>&
 bool loadTextureCube(dj::TextureManager& texMgr, std::vector<dj::TextureHandle>& cubeTextures, const char* path, const char* extension, std::shared_ptr<dj::ILogger> logger);
 
 void configureRasterization();
-void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects);
+void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects, std::shared_ptr<dj::ILogger> logger);
 void setDefaultMaterials(std::vector<dj::ObjectPtr>& objects, dj::MaterialPtr mat);
 void setMaterials(std::vector<dj::ObjectInstancePtr>& objectInstances, const std::vector<dj::MaterialPtr>& mat);
 void createObjectInstances(const std::vector<dj::ObjectPtr>& objects, std::vector<dj::ObjectInstancePtr>& objectInstances);
@@ -87,9 +87,6 @@ void maualObjectsPreTransformations(std::vector<dj::ObjectInstancePtr>& instance
 void manualObjectsTransformations(std::vector<dj::ObjectInstancePtr>& instances, const dj::TimeDrivenMovement& tdm);
 void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMovement& tdm);
 glm::mat3 calcNormalMatrixToViewSpace(const glm::mat4& view, const glm::mat4& model);
-
-// Helpers - Debug
-void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period);
 
 // Helpers - Render
 void renderWorldForDepthTest(std::vector<dj::ObjectInstancePtr>& instances, dj::ProgramPtr program);
@@ -173,6 +170,26 @@ void renderWorldSingleProgram(std::vector<dj::ObjectInstancePtr>& instances, dj:
 *   STAGE 9.3.4 :::: Draw Main FBO \n
 */
 
+class FPSReporter
+{
+	std::shared_ptr<dj::ILogger> logger;
+
+public:
+	FPSReporter(std::shared_ptr<dj::ILogger> logger)
+		: logger(logger)
+	{
+	}
+
+	void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period)
+	{
+		if (logger)
+		{
+			float fps = static_cast<float>(framesCount) / (static_cast<float>(period.count()) / 1000.0f);
+			logger->log(dj::Log(dj::LogLevel::Info, 0u, "", "FPS: {}", static_cast<unsigned int>(fps)));
+		}
+	}
+};
+
 void basicSetupQualitySettings(dj::QualitySettings<4u>& quality)
 {
 	quality.set<dj::EngineQuality::Shadow2DResolution>(std::array{ 2048u, 1024u, 512u, 256u });
@@ -191,8 +208,8 @@ int main()
 	std::shared_ptr<dj::DebugTweaks> dt = std::make_shared<dj::DebugTweaks>();
 	dj::TimeDrivenMovement tdm;
 
-	dj::TextureManager texMgr;
-	dj::FramebufferManager fboMgr;
+	dj::TextureManager texMgr(logger);
+	dj::FramebufferManager fboMgr(logger);
 
 	std::vector<dj::ObjectPtr> objects;
 	std::vector<dj::ObjectInstancePtr> objectInstances;
@@ -234,7 +251,7 @@ int main()
 	// STAGE 3 :::: Objects Loading
 	// Load objects and init their transformations
 	dj::MeshData meshData;
-	loadObjects(meshData, objects);
+	loadObjects(meshData, objects, logger);
 	createObjectInstances(objects, objectInstances);
 	loadLights(lights);
 
@@ -385,8 +402,10 @@ int main()
 	dj::RenderSkyboxWorldNode cubeMapDebugNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
 	cubeMapDebugNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
 
+	FPSReporter fpsReporter(logger);
 	dj::OccurrenceFrequency fps(std::chrono::milliseconds(5000u));
-	fps.setReportCallback(reportFPSCallback);
+	//fps.setReportCallback(fpsReporter.reportFPSCallback);
+	fps.setReportCallback(std::bind(&FPSReporter::reportFPSCallback, &fpsReporter, std::placeholders::_1, std::placeholders::_2));
 	fps.start();
 
 	// STAGE 9 :::: Render Loop
@@ -403,7 +422,10 @@ int main()
 			tfLightIntensity.start();
 			light0Range.resetValue(1.0f);
 			lights[0]->setIntensity(lights[0]->getIntensity() + 5.0f);
-			std::cout << "Light intensity: " << lights[0]->getIntensity() << std::endl;
+			if (logger)
+			{
+				logger->log(dj::Log(dj::LogLevel::Debug, 0u, "", "Light intensity: {}", lights[0]->getIntensity()));
+			}
 		}
 
 		lights[0]->setPosition(light0Move.getVal(), lights[0]->getPosition().y, lights[0]->getPosition().z);
@@ -898,17 +920,17 @@ void configureRasterization()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects)
+void loadObjects(dj::MeshData& meshData, std::vector<dj::ObjectPtr>& objects, std::shared_ptr<dj::ILogger> logger)
 {
-	auto loadObject = [&meshData, &objects](auto& vertices, auto& indices, const char* objName) {
+	auto loadObject = [&meshData, &objects, &logger](auto& vertices, auto& indices, const char* objName) {
 		dj::Mesh mesh;
 		mesh.addVertices(vertices, std::size(vertices));
 		mesh.addIndices(indices, std::size(indices));
 		mesh.computeBoundingBox();
 
-		if (!mesh.computeTangents())
+		if (!mesh.computeTangents(logger) && logger)
 		{
-			std::cerr << "Tangents computation failed\n";
+			logger->log(dj::Log(dj::LogLevel::Error, dj::LogCode::Object_TangentComputation_Fail, "", "Tangent computation faile"));
 		}
 
 		dj::MeshAlignment meshIndices = meshData.addMesh(mesh);
@@ -1002,7 +1024,10 @@ bool createShadows(dj::TextureManager& texMgr,
 	{
 		if (light->getType() == dj::Light::Type::Spot)
 		{
-			std::cout << "Creating Framebuffer for 2D Shadow\n";
+			if (logger)
+			{
+				logger->log(dj::Log(dj::LogLevel::Info, "", "Creating Framebuffer for 2D Shadow"));
+			}
 
 			dj::TextureAttachmentDesc texAttachDesc{};
 			texAttachDesc.glType = dj::TextureType::Texture2D;
@@ -1040,7 +1065,10 @@ bool createShadows(dj::TextureManager& texMgr,
 		}
 		else if (light->getType() == dj::Light::Type::Point)
 		{
-			std::cout << "Creating Framebuffer for Cubemap Shadow\n";
+			if (logger)
+			{
+				logger->log(dj::Log(dj::LogLevel::Info, "", "Creating Framebuffer for Cubemap Shadow"));
+			}
 
 			dj::TextureAttachmentDesc texAttachDesc{};
 			texAttachDesc.glType = dj::TextureType::TextureCube;
@@ -1254,10 +1282,4 @@ void updateCamera(GLFWwindow* window, dj::Camera& camera, const dj::TimeDrivenMo
 	}
 
 	camera.updateView();
-}
-
-void reportFPSCallback(unsigned int framesCount, std::chrono::milliseconds period)
-{
-	float fps = static_cast<float>(framesCount) / (static_cast<float>(period.count()) / 1000.0f);
-	std::cout << "FPS: " << static_cast<unsigned int>(fps) << std::endl;
 }

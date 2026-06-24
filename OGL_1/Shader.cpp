@@ -29,7 +29,7 @@ bool Shader::compile(std::shared_ptr<ILogger> logger)
 
 	if (!ok && logger)
 	{
-		logger->log(Log(LogLevel::Error, "Shader", glGetShaderInfoLogString(index), LogCode::Shader_Compilation_Fail));
+		logger->log(Log(LogLevel::Error, LogCode::Shader_Compilation_Fail, "Shader", glGetShaderInfoLogString(index)));
 	}
 
 	return static_cast<bool>(ok);

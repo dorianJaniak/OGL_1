@@ -11,9 +11,8 @@ struct Log : public ILog
 {
 	std::string description;
 
-	template <typename CodeType = unsigned int>
-	Log(LogLevel level, std::string_view source, std::string_view description, CodeType code = 0u) noexcept
-		: ILog(level, source, static_cast<unsigned int>(code))
+	Log(LogLevel level, std::string_view source, std::string_view description) noexcept
+		: ILog(level, source, 0u)
 		, description(description)
 	{
 	}

@@ -232,7 +232,7 @@ bool Framebuffer::verifyResolutionConsistency(const TextureManager& texMgr, cons
 
 	if (!resolutionConsistency && logger)
 	{
-		logger->log(Log(LogLevel::Warning, "Framebuffer", "Resolution of attachment: {} has different resolution than Framebuffer", attachment));
+		logger->log(Log(LogLevel::Warning, 0u, "Framebuffer", "Resolution of attachment: {} has different resolution than Framebuffer", attachment));
 	}
 
 	return resolutionConsistency;
