@@ -1,5 +1,6 @@
 #include "TextureManager.h"
 #include "TextureData.h"
+#include "Enums/LogCodes.h"
 #include "Enums/Converters.h"
 using namespace dj;
 
@@ -29,20 +30,20 @@ std::optional<TextureHandle> TextureManager::create2DFromFile(const TextureSampl
 
 	if (!data.isOk())
 	{
-		log(LogLevel::Error, 0u, "Could not load texture: {}", path);
+		log(LogLevel::Error, LogCode::TexMgr_TextureLoading_Fail, "Could not load texture: {}", path);
 		return std::nullopt;
 	}
 
 	if (data.getWidth() == 0u || data.getHeight() == 0u)
 	{
-		log(LogLevel::Error, 0u, "Wrong resolution of loaded texture: {}", path);
+		log(LogLevel::Error, LogCode::TexMgr_TextureResolution_Fail, "Wrong resolution of loaded texture: {}", path);
 		return std::nullopt;
 	}
 
 	std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
 	if (!sourceColorFormat)
 	{
-		log(LogLevel::Error, 0u, "Unknown texture color format: {}", path);
+		log(LogLevel::Error, LogCode::TexMgr_TextureColorFormat_Fail, "Unknown texture color format: {}", path);
 		return std::nullopt;
 	}
 
@@ -85,26 +86,26 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 
 	if (!data.isOk())
 	{
-		log(LogLevel::Error, 0u, "Could not load cube texture: {}", pathPrefix);
+		log(LogLevel::Error, LogCode::TexMgr_TextureLoading_Fail, "Could not load cube texture: {}", pathPrefix);
 		return std::nullopt;
 	}
 
 	if (data.getWidth() == 0u || data.getHeight() == 0u)
 	{
-		log(LogLevel::Error, 0u, "Wrong resolution of loaded cube texture: {}", pathPrefix);
+		log(LogLevel::Error, LogCode::TexMgr_TextureResolution_Fail, "Wrong resolution of loaded cube texture: {}", pathPrefix);
 		return std::nullopt;
 	}
 
 	if (data.getWidth() != data.getHeight())
 	{
-		log(LogLevel::Error, 0u, "Resolution of cube map side is incorrect. Width should equal height. Cube texture: {}", pathPrefix);
+		log(LogLevel::Error, LogCode::TexMgr_CubemapNotSquare, "Resolution of cube map side is incorrect. Width should equal height. Cube texture: {}", pathPrefix);
 		return std::nullopt;
 	}
 
 	std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
 	if (!sourceColorFormat)
 	{
-		log(LogLevel::Error, 0u, "Unknown cube texture color format: {}", pathPrefix);
+		log(LogLevel::Error, LogCode::TexMgr_TextureColorFormat_Fail, "Unknown cube texture color format: {}", pathPrefix);
 		return std::nullopt;
 	}
 
@@ -134,20 +135,20 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 
 		if (!data.isOk())
 		{
-			log(LogLevel::Error, 0u, "Could not load cube texture: {}", genSidePath(i));
+			log(LogLevel::Error, LogCode::TexMgr_TextureLoading_Fail, "Could not load cube texture: {}", genSidePath(i));
 			return std::nullopt;
 		}
 
 		if (data.getWidth() != desc.resolution.width || data.getHeight() != desc.resolution.height)
 		{
-			log(LogLevel::Error, 0u, "Side {} has different resolution than side 0. Could not load cube texture: ", i, pathPrefix);
+			log(LogLevel::Error, LogCode::TexMgr_ResolutionMismatch, "Side {} has different resolution than side 0. Could not load cube texture: ", i, pathPrefix);
 			return std::nullopt;
 		}
 
 		std::optional<TextureFormatDesc> sourceColorFormat = channelsCountToColorFormat(data.getChannelsCount());
 		if (!sourceColorFormat)
 		{
-			log(LogLevel::Error, 0u, "Unknown cube texture color format: {}", genSidePath(i));
+			log(LogLevel::Error, LogCode::TexMgr_TextureColorFormat_Fail, "Unknown cube texture color format: {}", genSidePath(i));
 			return std::nullopt;
 		}
 
@@ -158,7 +159,7 @@ std::optional<TextureHandle> TextureManager::createCubeMapFromFile(const Texture
 
 		if (*sourceColorFormat != desc.format)
 		{
-			log(LogLevel::Error, 0u, "Side {} has different color format than side 0. Could not load cube texture: {}", i, pathPrefix);
+			log(LogLevel::Error, LogCode::TexMgr_ColorFormatMismatch, "Side {} has different color format than side 0. Could not load cube texture: {}", i, pathPrefix);
 			return std::nullopt;
 		}
 

@@ -3,6 +3,7 @@
 #include "TextureManager.h"
 #include "Enums/Verification.h"
 #include "Enums/Serialization.h"
+#include "Enums/LogCodes.h"
 using namespace dj;
 
 FramebufferManager::FramebufferManager(std::shared_ptr<ILogger> logger) noexcept
@@ -44,13 +45,13 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 				if (!tex)
 				{
-					log(LogLevel::Error, 0u, "Could not create empty Texture");
+					log(LogLevel::Error, LogCode::FboMgr_TextureCreation_Fail, "Could not create empty Texture");
 					return std::nullopt;
 				}
 
 				if (!fbo.assignTextureAttachment(texMgr, *tex, attachmentDesc->attachment))
 				{
-					log(LogLevel::Error, 0u, "Could not assign Texture Attachment");
+					log(LogLevel::Error, LogCode::FboMgr_TextureAttachment_Fail, "Could not assign Texture Attachment");
 					return std::nullopt;
 				}
 
@@ -62,7 +63,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 				if (!fbo.assignRenderbufferAttachment(attachmentDesc->attachment, rbAttachDesc.internalFormat))
 				{
-					log(LogLevel::Error, 0u, "Could not create Render Buffer Attachment");
+					log(LogLevel::Error, LogCode::FboMgr_RenderBufferAttachment_Fail, "Could not create Render Buffer Attachment");
 					return std::nullopt;
 				}
 			}
@@ -71,7 +72,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 
 	if (GLenum status = fbo.getFramebufferStatus(); !toBool<FramebufferStatusContext>(status))
 	{
-		log(LogLevel::Error, 0u, "Framebuffer status incorrect: {}", toString(status));
+		log(LogLevel::Error, LogCode::FboMgr_FramebufferStatus_Fail, "Framebuffer status incorrect: {}", toString(status));
 		return std::nullopt;
 	}
 
@@ -80,7 +81,7 @@ std::optional<FramebufferHandleSet> FramebufferManager::createFramebufferAndText
 	std::optional<FramebufferHandle> handle = addFramebuffer(std::move(fbo), desc);
 	if (!handle)
 	{
-		log(LogLevel::Critical, 0u, "Could not add created Framebuffer");
+		log(LogLevel::Critical, LogCode::FboMgr_FramebufferNotAdded_Fail, "Could not add created Framebuffer");
 		return std::nullopt;
 	}
 
