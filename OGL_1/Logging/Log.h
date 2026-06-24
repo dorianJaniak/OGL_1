@@ -24,13 +24,6 @@ struct Log : public ILog
 		description = std::vformat(fmt, std::make_format_args(args...));
 	}
 
-	//template <typename... Args>
-	//Log(LogLevel level, std::string_view source, std::string_view fmt, Args... args) noexcept
-	//	: ILog(level, source, 0u)
-	//{
-	//	description = std::vformat(fmt, std::make_format_args(args...));
-	//}
-
 	virtual void print(std::ostream& stream) const;
 };
 
