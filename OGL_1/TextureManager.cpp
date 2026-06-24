@@ -424,7 +424,7 @@ std::optional<TextureHandle> TextureManager::addTexture(TextureResource&& res, c
 		}
 		catch (const std::exception& e)
 		{
-			log(LogLevel::Critical, 0u, "Could not add new texture to vectors - exception: {}", e.what());
+			log(LogLevel::Critical, LogCode::TexMgr_TextureNotAdded_Fail, "Could not add new texture to vectors - exception: {}", e.what());
 			return std::nullopt;
 		}
 	}

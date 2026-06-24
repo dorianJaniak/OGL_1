@@ -7,6 +7,7 @@ enum LogCode
 {
 	Unknown,
 	Object_TangentComputation_Fail,
+	Mesh_UVOrderComputation_Fail,
 	MainWindow_GLFW_Fail,
 	MainWindow_GLEW_Fail,
 	Shader_Compilation_Fail,
@@ -18,6 +19,7 @@ enum LogCode
 	TexMgr_CubemapNotSquare,
 	TexMgr_ResolutionMismatch,
 	TexMgr_ColorFormatMismatch,
+	TexMgr_TextureNotAdded_Fail,
 	FboMgr_TextureCreation_Fail,
 	FboMgr_TextureAttachment_Fail,
 	FboMgr_RenderBufferAttachment_Fail,

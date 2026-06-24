@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include "Logging/Log.h"
+#include "Enums/LogCodes.h"
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 using namespace dj;
@@ -74,7 +75,7 @@ bool Mesh::computeTangents(std::shared_ptr<ILogger> logger)
 
 		if (logger && glm::cross(glm::vec3(duv1.x, duv1.y, 0.0f), glm::vec3(duv2.x, duv2.y, 0.0f)).z < 0.0f)
 		{
-			logger->log(Log(LogLevel::Warning, 0u, "", "Wrong order of UV for Mesh {} point: ({}, {}, {}) and ({}, {}, {}) and ({}, {}, {})",
+			logger->log(Log(LogLevel::Warning, LogCode::Mesh_UVOrderComputation_Fail, "", "Wrong order of UV for Mesh {} point: ({}, {}, {}) and ({}, {}, {}) and ({}, {}, {})",
 				meshCount,
 				pos1.x, pos1.y, pos1.z,
 				pos2.x, pos2.y, pos2.z,
