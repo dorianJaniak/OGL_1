@@ -67,22 +67,45 @@ public:
 
 	Handle& operator=(const Handle& handle) noexcept
 	{
+		// Avoid reassignment of the same values
+		if (index == handle.index && generation == handle.generation)
+		{
+			return *this;
+		}
+
+		// Remove reference only if this Handle points at something (generation > 0 && manager != nullptr)
+		if (generation != 0u && index != handle.index)
+		{
+			// There should not be a case when manager is nullptr while handle points at something (generation > 0)
+			assert(manager && "Pointer to Resource Manager is nullptr");
+			manager->removeRef(*this);
+		}
+
 		index = handle.index;
 		generation = handle.generation;
 		manager = handle.manager;
 
 		assert(manager && "Pointer to Resource Manager is nullptr");
-		manager->addRef(handle);
+		manager->addRef(*this);
 
 		return *this;
 	}
 
 	Handle& operator=(Handle&& handle) noexcept
 	{
+		// Remove reference only if this Handle points at something (generation > 0 && manager != nullptr)
+		if (generation != 0u && index != handle.index)
+		{
+			// There should not be a case when manager is nullptr while handle points at something (generation > 0)
+			assert(manager && "Pointer to Resource Manager is nullptr");
+			manager->removeRef(*this);
+		}
+
 		index = handle.index;
 		generation = handle.generation;
 		manager = handle.manager;
 
+		// Not-calling addRef(), because fields are nullified in a passed argument - references count does not change 
 		handle.index = 0u;
 		handle.generation = 0u;
 		handle.manager = nullptr;
@@ -92,8 +115,7 @@ public:
 
 	~Handle()
 	{
-		//assert(manager && "Pointer to TextureManager is nullptr");
-		// It is possible when Handle was moved
+		// manager == nullptr, when Handle was moved
 		if (manager)
 		{
 			manager->removeRef(*this);
@@ -126,7 +148,7 @@ private:
 		, index(index)
 		, generation(generation)
 	{
-		assert(manager && "Pointer to Resource Manager is nullptr");
+		assert(manager && "Created Handle with undefined manager (nullptr)");
 		manager->addRef(*this);
 	}
 };

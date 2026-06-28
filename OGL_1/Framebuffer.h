@@ -87,6 +87,7 @@ public:
 private:
 	// Methods for FramebufferManager
 	void clear();								// deletes ID
+	void clearAttachments();					// deletes all attachments, but leaves ID
 
 	/*! \todo
 	- Consider other solution to avoid passing OpenGL Framebuffer ID (like RenderBackend class which is declared here as a friend)
