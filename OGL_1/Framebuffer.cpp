@@ -199,7 +199,12 @@ unsigned int Framebuffer::getHeight() const
 void Framebuffer::clear()
 {
 	glDeleteFramebuffers(1, &id);
+	clearAttachments();
+	id = 0u;
+}
 
+void Framebuffer::clearAttachments()
+{
 	for (std::optional<AttachmentBinding>& att : attachments)
 	{
 		if (att)
@@ -212,8 +217,6 @@ void Framebuffer::clear()
 
 		att = std::nullopt;
 	}
-
-	id = 0u;
 }
 
 GLuint Framebuffer::getID() const
