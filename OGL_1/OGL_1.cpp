@@ -228,7 +228,7 @@ int main()
 	//return tgltfLoader.load("res/gltfs/twoCubes_altC_rot_texture_customProp/untitled.gltf");
 
 	// STAGE 1 :::: Window and Context Init
-	MainWindow mw(logger, 1200, 800, (1200.0f / 800.0f));
+	MainWindow mw(logger, 600, 400, (1200.0f / 800.0f));
 	if (!mw.initGLFW(3, 3, "Prosty silnik"))
 	{
 		return -1;
@@ -271,10 +271,6 @@ int main()
 		mw.terminate();
 		return -1;
 	}
-
-	assert(mainFBOHandles->texHandles.size() > 0 && "Main FBO creation failed - it should have at least 1 texture attached");
-	TextureHandle fbo = mainFBOHandles->texHandles[0];
-	cameraIDs[0] = fbo;
 
 	GLuint svbo, svao;
 	glGenBuffers(1, &svbo);
@@ -383,17 +379,10 @@ int main()
 		skyboxObjectInstances.push_back(skyboxCubeObjInst);
 	}
 
-	// VARIANT 1
-	//RenderSkyboxWorldNode skyboxNode{ texMgr, fbo, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
-	//skyboxNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
-	//RenderShadedWorldNode worldNode{ texMgr, fbo, camera, ebo, objectInstances, shadows, pointShadows, lights, std::string("Main Color - World") };
-	//worldNode.setConfiguration(GL_NONE, true, true, GL_NONE);
-
 	// VARIANT 2
-	RenderShadedWorldNode worldNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World") };
-	worldNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, true, true, GL_NONE);
-	RenderSkyboxWorldNode skyboxNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, skyboxObjectInstances, "Main Color - Skybox" };
-	skyboxNode.setConfiguration(GL_NONE, true, false, GL_NONE);
+	std::shared_ptr<RenderShadedWorldNode> worldNode;
+	std::shared_ptr<RenderSkyboxWorldNode> skyboxNode;
+	std::shared_ptr<RenderSkyboxWorldNode> cubeMapDebugNode;
 
 	std::vector<ObjectInstancePtr> cubeMapDebugObjectInstances;
 	{
@@ -401,8 +390,6 @@ int main()
 		cubeObjInst->setMaterial(materials.at(3u));
 		cubeMapDebugObjectInstances.push_back(cubeObjInst);
 	}
-	RenderSkyboxWorldNode cubeMapDebugNode{ texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap" };
-	cubeMapDebugNode.setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
 
 	FPSReporter fpsReporter(logger);
 	OccurrenceFrequency fps(std::chrono::milliseconds(5000u));
@@ -524,9 +511,9 @@ int main()
 			TextureHandle shTex = pointFBOs.at(1).fbo.texHandles[0u];
 			if (texMgr.exists(shTex))
 			{
-				cubeMapDebugNode.addTexture("u_skybox", shTex);
+				cubeMapDebugNode->addTexture("u_skybox", shTex);
 			}
-			cubeMapDebugNode.run();
+			cubeMapDebugNode->run();
 
 			glDepthMask(GL_TRUE);
 			glDisable(GL_CULL_FACE);
@@ -536,13 +523,46 @@ int main()
 		// Stage 9.3.3 :::: Render Scene
 		else
 		{
+			static unsigned int lastWidth = 0u;
+			static unsigned int lastHeight = 0u;
+
+			if (lastWidth != mw.getWidth() || lastHeight != mw.getHeight())
+			{
+				if (logger)
+				{
+					logger->log(Log(LogLevel::Info, 0u, "", "Resizing main framebuffer from: {}x{} to {}x{}", lastWidth, lastHeight, mw.getWidth(), mw.getHeight()));
+				}
+
+				lastWidth = mw.getWidth();
+				lastHeight = mw.getHeight();
+
+				// Replace main framebuffer handles (creates new framebuffer, texture and renderbuffer attachments)
+				mainFBOHandles = createMainFramebuffer(fboMgr, texMgr, mw, quality);
+
+				worldNode = std::make_shared<RenderShadedWorldNode>(texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, objectInstances, spotFBOs, pointFBOs, lights, std::string("Main Color - World"));
+				worldNode->setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, true, true, GL_NONE);
+				skyboxNode = std::make_shared<RenderSkyboxWorldNode>(texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, skyboxObjectInstances, "Main Color - Skybox");
+				skyboxNode->setConfiguration(GL_NONE, true, false, GL_NONE);
+
+				cubeMapDebugNode = std::make_shared<RenderSkyboxWorldNode>(texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap");
+				cubeMapDebugNode->setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
+
+				// Needs to be before texMgr.forceDeleteUnused(), because this is last reference to fbo
+				assert(mainFBOHandles->texHandles.size() > 0 && "Main FBO creation failed - it should have at least 1 texture attached");
+				cameraIDs[0] = mainFBOHandles->texHandles[0];
+
+				logger->log(Log(LogLevel::Debug, 0u, "", "Deleted {} unused framebuffers. Left: {}", fboMgr.forceDeleteUnused(), fboMgr.getCount()));
+				logger->log(Log(LogLevel::Debug, 0u, "", "Deleted {} unused textures. Left: {}", texMgr.forceDeleteUnused(), texMgr.getCount()));
+			}
+
 			// Stage 9.3.3.1 :::: Render World Node
-			IRenderNode* worldNodeG = &worldNode;
+			std::shared_ptr<IRenderNode> worldNodeG = worldNode;
 			worldNodeG->run();
 
 			// Stage 9.3.3.2 :::: Render Skybox Node
+			std::shared_ptr<IRenderNode> skyboxNodeG = skyboxNode;
 			glDepthFunc(GL_LEQUAL);
-			skyboxNode.run();
+			skyboxNodeG->run();
 
 			// Stage 9.3.3.3 :::: Render Debug Edges
 			glDepthFunc(GL_LESS);
@@ -570,20 +590,11 @@ int main()
 		glDisable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE11);
 
-		if (dt->getActiveCameraIndex() == 3u)
+		if (cameraIDs[dt->getActiveCameraIndex()])
 		{
-			if (cameraIDs[0u])
-			{
-				texMgr.bind(*cameraIDs[0u]);
-			}
+			texMgr.bind(*cameraIDs[dt->getActiveCameraIndex()]);
 		}
-		else
-		{
-			if (cameraIDs[dt->getActiveCameraIndex()])
-			{
-				texMgr.bind(*cameraIDs[dt->getActiveCameraIndex()]);
-			}
-		}
+
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 		glDisable(GL_FRAMEBUFFER_SRGB);

@@ -26,7 +26,7 @@ unsigned int DebugTweaks::getDebugVertices() const
 
 void DebugTweaks::changeCamera()
 {
-	activeCameraIndex = (activeCameraIndex + 1u) % 4u;
+	activeCameraIndex = (activeCameraIndex + 1u) % 3u;
 }
 
 void DebugTweaks::switchGammaCorrection()
