@@ -228,7 +228,7 @@ int main()
 	//return tgltfLoader.load("res/gltfs/twoCubes_altC_rot_texture_customProp/untitled.gltf");
 
 	// STAGE 1 :::: Window and Context Init
-	MainWindow mw(logger, 600, 400, (1200.0f / 800.0f));
+	MainWindow mw(logger, 1200, 800, (1200.0f / 800.0f));
 	if (!mw.initGLFW(3, 3, "Prosty silnik"))
 	{
 		return -1;
