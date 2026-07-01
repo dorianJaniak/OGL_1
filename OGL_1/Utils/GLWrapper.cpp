@@ -25,7 +25,7 @@ void glTexImage2D(TextureCubeSide side, GLint level, ColorFormatInDevice interna
 std::string glGetShaderInfoLogString(GLuint shaderID)
 {
 	glGetShaderInfoLog(shaderID, static_cast<GLsizei>(logArray.size()), nullptr, logArray.data());
-	return logArray.data();
+	return std::string("\n") + logArray.data();
 }
 
 std::string glGetProgramInfoLogString(GLuint programID)
