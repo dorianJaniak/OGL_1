@@ -1,6 +1,6 @@
 #pragma once
-#include "../Framebuffer.h"
-#include "../DefinitionsGL.h"
+#include "Framebuffer.h"
+#include "DefinitionsGL.h"
 #include "TextureHandle.h"
 #include "FramebufferHandle.h"
 #include <string>

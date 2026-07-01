@@ -1,6 +1,6 @@
 #include "IRenderWorldNode.h"
-#include "../Material.h"
-#include "../Program.h"
+#include "Material.h"
+#include "Program.h"
 using namespace dj;
 
 IRenderWorldNode::IRenderWorldNode(

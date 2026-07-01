@@ -1,7 +1,7 @@
 #pragma once
 #include "IRenderNode.h"
-#include "../Object.h"
-#include "../Camera.h"
+#include "Object.h"
+#include "Camera.h"
 #include <vector>
 
 namespace dj

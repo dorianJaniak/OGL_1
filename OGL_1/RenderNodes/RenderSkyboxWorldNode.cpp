@@ -1,5 +1,5 @@
 #include "RenderSkyboxWorldNode.h"
-#include "../Program.h"
+#include "Program.h"
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 using namespace dj;

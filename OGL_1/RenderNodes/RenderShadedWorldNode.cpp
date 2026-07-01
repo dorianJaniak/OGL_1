@@ -1,7 +1,7 @@
 #include "RenderShadedWorldNode.h"
-#include "../Program.h"
-#include "../EngineKeywords.h"
-#include "../Light.h"
+#include "Program.h"
+#include "EngineKeywords.h"
+#include "Light.h"
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 using namespace dj;
