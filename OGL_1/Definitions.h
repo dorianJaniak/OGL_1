@@ -13,6 +13,7 @@ namespace dj {
 		skybox = 3u,
 		debugMesh = 4u,
 		depthCube = 5u,
+		particles = 6u,
 	};
 
 	class Material;

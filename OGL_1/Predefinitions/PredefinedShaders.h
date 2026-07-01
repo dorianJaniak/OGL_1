@@ -2,6 +2,36 @@
 
 namespace dj {
 
+const char* const particleSystem_vsSource = R"(
+#version 330 core
+layout (location = 0) in vec3 a_pos;
+layout (location = 1) in vec2 a_texCoord;
+layout (location = 2) in mat4 a_model;
+
+uniform mat4 u_scale;
+uniform mat4 u_camVP;
+
+out vec2 v_texCoord;
+
+void main()
+{
+	v_texCoord = a_texCoord;
+	gl_Position = u_camVP * a_model * u_scale * vec4(a_pos, 1.0f);
+}
+)";
+
+const char* const particleSystem_fsSource = R"(
+#version 330 core
+
+in vec2 v_texCoord;
+out vec4 FragColor;
+
+void main()
+{
+	FragColor = vec4(1.0f, 0.5f, 0.5f, 1.0f);
+}
+)";
+
 const char* const debugBoundingBox_vsSource = R"(
 #version 330 core
 

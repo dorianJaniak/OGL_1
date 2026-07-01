@@ -162,6 +162,12 @@
     <ClCompile Include="Logging\Log.cpp">
       <Filter>Pliki źródłowe\Logging</Filter>
     </ClCompile>
+    <ClCompile Include="ParticleSystem.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderNodes\RenderParticlesNode.cpp">
+      <Filter>Pliki źródłowe\RenderNodes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextureData.h">
@@ -370,6 +376,12 @@
     </ClInclude>
     <ClInclude Include="Logging\NamedLoggingInstance.h">
       <Filter>Pliki nagłówkowe\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleSystem.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderNodes\RenderParticlesNode.h">
+      <Filter>Pliki nagłówkowe\RenderNodes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

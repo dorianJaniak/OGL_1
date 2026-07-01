@@ -155,11 +155,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Perspective.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="RenderNodes\CameraNodeProperty.cpp" />
     <ClCompile Include="RenderNodes\IRenderNode.cpp" />
     <ClCompile Include="RenderNodes\IRenderWorldNode.cpp" />
+    <ClCompile Include="RenderNodes\RenderParticlesNode.cpp" />
     <ClCompile Include="RenderNodes\RenderShadedWorldNode.cpp" />
     <ClCompile Include="RenderNodes\RenderDepthWorldNode.cpp" />
     <ClCompile Include="RenderNodes\RenderSkyboxWorldNode.cpp" />
@@ -208,6 +210,7 @@
     <ClInclude Include="Logging\Logger.h" />
     <ClInclude Include="Logging\LoggingInstance.h" />
     <ClInclude Include="Logging\NamedLoggingInstance.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Perspective.h" />
     <ClInclude Include="QualitySettings.h" />
     <ClInclude Include="Light.h" />
@@ -223,6 +226,7 @@
     <ClInclude Include="RenderNodes\CameraNodeProperty.h" />
     <ClInclude Include="RenderNodes\IRenderNode.h" />
     <ClInclude Include="RenderNodes\IRenderWorldNode.h" />
+    <ClInclude Include="RenderNodes\RenderParticlesNode.h" />
     <ClInclude Include="RenderNodes\RenderShadedWorldNode.h" />
     <ClInclude Include="RenderNodes\RenderDepthWorldNode.h" />
     <ClInclude Include="RenderNodes\RenderSkyboxWorldNode.h" />
