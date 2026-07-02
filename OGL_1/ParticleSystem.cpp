@@ -5,14 +5,17 @@
 #include <random>
 using namespace dj;
 
-ParticleSystem::ParticleSystem(const TimeDrivenMovement& tdm) noexcept
+ParticleSystem::ParticleSystem(const TimeDrivenMovement& tdm, unsigned int count) noexcept
 	: tdm(tdm)
+	, count(count)
 	, vao(0)
 	, vbo(0)
 	, instancesVBO(0)
 	, position{}
 	, velocity{}
 	, boundary{ 1.0f, 1.0f, 1.0f }
+	, particleScale{ 1.0f, 1.0f }
+	, opacity(1.0f)
 {
 }
 
@@ -23,11 +26,21 @@ ParticleSystem::~ParticleSystem()
 	glDeleteVertexArrays(1, &vao);
 }
 
-void ParticleSystem::initBuffers()
+bool ParticleSystem::initBuffers()
 {
 	if (vao || vbo || instancesVBO)
 	{
-		return;
+		return false;
+	}
+
+	try
+	{
+		positions.resize(count);
+		transformations.resize(count);
+	}
+	catch (const std::exception&)
+	{
+		return false;
 	}
 
 	glGenVertexArrays(1, &vao);
@@ -50,7 +63,7 @@ void ParticleSystem::initBuffers()
 	// Prepare memory for particle instances
 	glGenBuffers(1, &instancesVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, instancesVBO);
-	glBufferData(GL_ARRAY_BUFFER, count() * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, count * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
 
 	// Configure attributes - instancing
 	for (unsigned int i = 0; i < 4; ++i)
@@ -62,6 +75,8 @@ void ParticleSystem::initBuffers()
 	}
 
 	glBindVertexArray(0);
+
+	return true;
 }
 
 void ParticleSystem::setPosition(const glm::vec3& pos)
@@ -79,9 +94,29 @@ void ParticleSystem::setVelocity(const glm::vec3& vel)
 	velocity = vel;
 }
 
-unsigned int ParticleSystem::count() const
+void ParticleSystem::setParticleScale(const glm::vec2& scale)
 {
-	return static_cast<unsigned int>(std::min(positions.size(), transformations.size()));
+	particleScale = scale;
+}
+
+void ParticleSystem::setOpacity(float opacity)
+{
+	this->opacity = opacity;
+}
+
+unsigned int ParticleSystem::getCount() const
+{
+	return count;
+}
+
+const glm::vec2& ParticleSystem::getParticleScale() const
+{
+	return particleScale;
+}
+
+float ParticleSystem::getOpacity() const
+{
+	return opacity;
 }
 
 void ParticleSystem::randomizeParticles()
@@ -98,7 +133,7 @@ void ParticleSystem::randomizeParticles()
 
 void ParticleSystem::updateTransformations()
 {
-	unsigned int c = count();
+	unsigned int c = getCount();
 	for (unsigned int i = 0; i < c; ++i)
 	{
 		transformations[i] = glm::translate(glm::mat4(1.0f), (position + positions[i]));
@@ -121,12 +156,12 @@ void ParticleSystem::unbind()
 
 void ParticleSystem::updatePositions()
 {
-	static bool first = true;
-	if (first)
-	{
-		first = false;
-		return;
-	}
+	//static bool first = true;
+	//if (first)
+	//{
+	//	first = false;
+	//	return;
+	//}
 	float step = static_cast<float>(tdm.getFrameDiffMs().count()) / 1000.0f;
 	glm::vec3 velStep = velocity * step;
 

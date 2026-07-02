@@ -33,9 +33,9 @@ void RenderParticlesNode::draw()
 			ProgramPtrConst program = material->getProgram().lock();
 			program->use();
 
-			//static glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.02f, 0.1f, 0.1f));
-			static glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f, 0.1f, 0.1f));
-			glUniform1f(program->getUniformLocation("u_opacity"), 0.3f);
+			static glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(particles->getParticleScale(), 1.0f));
+
+			glUniform1f(program->getUniformLocation("u_opacity"), particles->getOpacity());
 			glUniformMatrix4fv(program->getUniformLocation("u_scale"), 1, GL_FALSE, glm::value_ptr(scale));
 			glUniformMatrix4fv(program->getUniformLocation("u_camVP"), 1, GL_FALSE, glm::value_ptr(camera->getVPMatrix()));
 			const std::vector<Material::TextureBinding>& textures = material->getTextures();
@@ -50,7 +50,7 @@ void RenderParticlesNode::draw()
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glBlendEquation(GL_FUNC_ADD);
-			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, particles->count());
+			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, particles->getCount());
 			glDisable(GL_BLEND);
 		}
 	}

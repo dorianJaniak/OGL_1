@@ -326,11 +326,18 @@ int main()
 
 	// STAGE 6.1 :::: VAO, VBOs for particles (cpu approach)
 	// This part is only for testing - to check how instancing works
-	std::shared_ptr<ParticleSystem> particles = std::make_shared<ParticleSystem>(tdm);
-	particles->initBuffers();
-	particles->setBounds(10.0f, 6.0f, 10.0f);
-	particles->setPosition(glm::vec3(10.0f, 3.0f, 0.0f));
-	particles->setVelocity(glm::vec3(0.0f, -6.0f, 0.0f));
+	std::shared_ptr<ParticleSystem> particles = std::make_shared<ParticleSystem>(tdm, 2000);
+	if (!particles->initBuffers())
+	{
+		logger->log(Log(LogLevel::Error, 0u, "", "Could not initialize particle system with {} elements", particles->getCount()));
+		mw.terminate();
+		return -1;
+	}
+	particles->setBounds(20.0f, 10.0f, 20.0f);
+	particles->setPosition({ 0.0f, 5.0f, 0.0f });
+	particles->setVelocity(glm::vec3(0.0f, -8.0f, 0.0f));
+	particles->setParticleScale(glm::vec2(0.05f, 0.1f));
+	particles->setOpacity(0.3f);
 	particles->randomizeParticles();
 
 	// STAGE 7 :::: Materials Creation
@@ -585,6 +592,8 @@ int main()
 
 				logger->log(Log(LogLevel::Debug, 0u, "", "Deleted {} unused framebuffers. Left: {}", fboMgr.forceDeleteUnused(), fboMgr.getCount()));
 				logger->log(Log(LogLevel::Debug, 0u, "", "Deleted {} unused textures. Left: {}", texMgr.forceDeleteUnused(), texMgr.getCount()));
+
+				particles->randomizeParticles();
 			}
 
 			// Stage 9.3.3.1 :::: Render World Node
