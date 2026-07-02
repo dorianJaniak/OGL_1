@@ -156,12 +156,6 @@ void ParticleSystem::unbind()
 
 void ParticleSystem::updatePositions()
 {
-	//static bool first = true;
-	//if (first)
-	//{
-	//	first = false;
-	//	return;
-	//}
 	float step = static_cast<float>(tdm.getFrameDiffMs().count()) / 1000.0f;
 	glm::vec3 velStep = velocity * step;
 
