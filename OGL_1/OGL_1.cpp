@@ -31,8 +31,8 @@
 #include "TGLTFLoader.h"
 #include "DefinitionsGL.h"
 #include "EngineKeywords.h"
-#include "Predefinitions\PredefinedShaders.h"
-#include "Predefinitions\PredefinedMeshes.h"
+#include "Predefinitions/PredefinedShaders.h"
+#include "Predefinitions/PredefinedMeshes.h"
 #include "Basic3DEnviro/Basic3DEnviro.h"
 #include "Basic3DEnviro/DebugTweaks.h"
 #include "Time/TimeDrivenMovement.h"
@@ -54,6 +54,7 @@ bool loadEnginePrograms(std::map<EngineProgramID, ProgramPtr>& enginePrograms, s
 bool setupEnginePrograms(std::map<EngineProgramID, ProgramPtr>& enginePrograms, std::shared_ptr<ILogger> logger);
 
 bool loadTextures(TextureManager& texMgr, std::vector<TextureHandle>& pbrTextures, std::vector<TextureHandle>& skyboxTextures, std::shared_ptr<ILogger> logger);
+std::optional<TextureHandle> loadTexture(TextureManager& texMgr, const char* path, std::shared_ptr<ILogger> logger);
 bool loadTexturesPBR(TextureManager& texMgr, std::vector<TextureHandle>& pbrTextures, const char* path, const char* extension, std::shared_ptr<ILogger> logger);
 bool loadTextureCube(TextureManager& texMgr, std::vector<TextureHandle>& cubeTextures, const char* path, const char* extension, std::shared_ptr<ILogger> logger);
 
@@ -78,6 +79,7 @@ bool createMaterials(
 	const std::map<EngineProgramID, ProgramPtr>& enginePrograms,
 	const std::vector<TextureHandle>& texturesPBR,
 	const std::vector<TextureHandle>& texturesCube,
+	const std::vector<TextureHandle>& texturesAlpha,
 	std::shared_ptr<ILogger> logger);
 std::optional<FramebufferHandleSet> createMainFramebuffer(
 	FramebufferManager& fboMgr,
@@ -334,6 +336,7 @@ int main()
 	// STAGE 7 :::: Materials Creation
 	std::vector<TextureHandle> pbrTextures;
 	std::vector<TextureHandle> skyboxTextures;
+	std::vector<TextureHandle> alphaTextures;
 
 	if (!loadTextures(texMgr, pbrTextures, skyboxTextures, logger))
 	{
@@ -341,8 +344,18 @@ int main()
 		return -1;
 	}
 
+	{
+		std::optional<TextureHandle> raindropTex = loadTexture(texMgr, "res/textures/alpha/raindrop.png", logger);
+		if (!raindropTex)
+		{
+			mw.terminate();
+			return -1;
+		}
+		alphaTextures.push_back(*raindropTex);
+	}
+
 	// Materials configuration
-	if (!createMaterials(materials, enginePrograms, pbrTextures, skyboxTextures, logger))
+	if (!createMaterials(materials, enginePrograms, pbrTextures, skyboxTextures, alphaTextures, logger))
 	{
 		mw.terminate();
 		return -1;
@@ -561,7 +574,7 @@ int main()
 
 				assert(materials.size() >= 5 && "There is no material for particles");
 				particlesNode = std::make_shared<RenderParticlesNode>(texMgr, fboMgr, mainFBOHandles->handle, camera, particles, materials[4], "Particles Node");
-				particlesNode->setConfiguration(GL_NONE, true, true, GL_NONE);
+				particlesNode->setConfiguration(GL_NONE, true, false, GL_NONE);
 
 				cubeMapDebugNode = std::make_shared<RenderSkyboxWorldNode>(texMgr, fboMgr, mainFBOHandles->handle, camera, ebo, cubeMapDebugObjectInstances, "Debug CubeMap");
 				cubeMapDebugNode->setConfiguration(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, false, false, GL_FRONT);
@@ -578,6 +591,11 @@ int main()
 			std::shared_ptr<IRenderNode> worldNodeG = worldNode;
 			worldNodeG->run();
 
+			// Stage 9.3.3.3 :::: Render Skybox Node
+			std::shared_ptr<IRenderNode> skyboxNodeG = skyboxNode;
+			glDepthFunc(GL_LEQUAL);
+			skyboxNodeG->run();
+
 			// Stage 9.3.3.2 :::: Render Particles Node
 			if (particlesNode && particles)
 			{
@@ -586,14 +604,9 @@ int main()
 				particlesNode->run();
 			}
 
-			// Stage 9.3.3.3 :::: Render Skybox Node
+			// Stage 9.3.3.4 :::: Render Debug Edges
 			glBindVertexArray(vao);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-			std::shared_ptr<IRenderNode> skyboxNodeG = skyboxNode;
-			glDepthFunc(GL_LEQUAL);
-			skyboxNodeG->run();
-
-			// Stage 9.3.3.4 :::: Render Debug Edges
 			glDepthFunc(GL_LESS);
 			if (dt->getDebugVertices())
 			{
@@ -859,6 +872,8 @@ bool setupEnginePrograms(std::map<EngineProgramID, ProgramPtr>& enginePrograms, 
 		particlesProgram->use();
 		registerAndCheck(particlesProgram, "u_scale");
 		registerAndCheck(particlesProgram, "u_camVP");
+		registerAndCheck(particlesProgram, "u_texture");
+		registerAndCheck(particlesProgram, "u_opacity");
 
 		if (uniformsCount != uniformsOkCount)
 		{
@@ -909,6 +924,20 @@ bool loadTextures(TextureManager& texMgr, std::vector<TextureHandle>& pbrTexture
 	}
 
 	return true;
+}
+
+std::optional<TextureHandle> loadTexture(TextureManager& texMgr, const char* path, std::shared_ptr<ILogger> logger)
+{
+	static const TextureSamplingDesc& sampling = getTextureSamplingDescDefaultsFor2D();
+	std::optional<TextureHandle> handle = texMgr.create2DFromFile(sampling, path, true, true, false);
+
+	if (!handle)
+	{
+		logger->log(Log(LogLevel::Error, 0u, "", "Could not load texture: {}", path));
+		return std::nullopt;
+	}
+
+	return handle;
 }
 
 bool loadTexturesPBR(TextureManager& texMgr, std::vector<TextureHandle>& pbrTextures, const char* path, const char* extension, std::shared_ptr<ILogger> logger)
@@ -1166,6 +1195,7 @@ bool createMaterials(std::vector<MaterialPtr>& materials,
 	const std::map<EngineProgramID, ProgramPtr>& enginePrograms,
 	const std::vector<TextureHandle>& texturesPBR,
 	const std::vector<TextureHandle>& texturesCube,
+	const std::vector<TextureHandle>& texturesAlpha,
 	std::shared_ptr<ILogger> logger)
 {
 
@@ -1209,6 +1239,7 @@ bool createMaterials(std::vector<MaterialPtr>& materials,
 		materialDebugCube->setProgram(skyboxProgram);
 
 		materialParticles->setProgram(particlesProgram);
+		materialParticles->addTexture(texturesAlpha.at(0), "u_texture");
 	}
 	catch (const std::out_of_range& ex)
 	{

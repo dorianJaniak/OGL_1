@@ -11,11 +11,11 @@ layout (location = 2) in mat4 a_model;
 uniform mat4 u_scale;
 uniform mat4 u_camVP;
 
-out vec2 v_texCoord;
+out vec2 v_texCoords;
 
 void main()
 {
-	v_texCoord = a_texCoord;
+	v_texCoords = a_texCoord;
 	gl_Position = u_camVP * a_model * u_scale * vec4(a_pos, 1.0f);
 }
 )";
@@ -23,12 +23,21 @@ void main()
 const char* const particleSystem_fsSource = R"(
 #version 330 core
 
-in vec2 v_texCoord;
+in vec2 v_texCoords;
 out vec4 FragColor;
+
+uniform sampler2D u_texture;
+uniform float u_opacity;
 
 void main()
 {
-	FragColor = vec4(1.0f, 0.5f, 0.5f, 1.0f);
+	vec4 texColor = texture(u_texture, v_texCoords);
+	if (texColor.a < 0.05f)
+	{
+		discard;
+	}
+	texColor.a *= u_opacity;
+	FragColor = texColor;
 }
 )";
 

@@ -148,7 +148,7 @@ void ParticleSystem::updatePositions()
 void ParticleSystem::randomizeStartingPosition(glm::vec3& pos, float halfX, float halfY, float halfZ)
 {
 	pos.x = genRandomValue(-halfX, halfX);
-	pos.y = genRandomValue(halfY, halfY * 1.05f);
+	pos.y = genRandomValue(halfY * 0.95f, halfY);
 	pos.z = genRandomValue(-halfZ, halfZ);
 }
 
