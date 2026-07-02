@@ -17,7 +17,7 @@ bool Material::addTexture(const TextureHandle& handle, const std::string& sample
 	bool updated = false;
 	if (!program.expired())
 	{
-		unsigned int uniformLocation = program.lock()->getUniformLocation(samplerName);
+		int uniformLocation = program.lock()->getUniformLocation(samplerName);
 		if (uniformLocation != -1)
 		{
 			updated = true;

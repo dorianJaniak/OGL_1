@@ -1,5 +1,5 @@
 #include "IRenderNode.h"
-#include "../Program.h"
+#include "Program.h"
 #include "TextureManager.h"
 #include "FramebufferManager.h"
 using namespace dj;
