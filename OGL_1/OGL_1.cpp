@@ -458,7 +458,14 @@ int main()
 		manualObjectsTransformations(objectInstances, tdm);
 		if (particles)
 		{
-			particles->updatePositions();
+			if (tdm.getFrameDiffMs().count() > 200)
+			{
+				particles->randomizeParticles();
+			}
+			else
+			{
+				particles->updatePositions();
+			}
 		}
 
 		// Stage 9.3 :::: Rendering
